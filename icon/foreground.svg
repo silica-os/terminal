@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="1024px" height="1024px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <defs>
-        <path d="M605,446 L622.2,446 C632.280945,446 637.321418,446 641.171829,447.961883 C647.202785,451.034808 651,457.2313 651,464 C651,470.7687 647.202785,476.965192 641.171829,480.038117 C637.321418,482 632.280945,482 622.2,482 L605,482 L605,830 L205,830 L205,430 L605,430 Z M463.171829,379.961883 C469.202785,383.034808 473,389.2313 473,396 C473,402.7687 469.202785,408.965192 463.171829,412.038117 C459.321418,414 454.280945,414 444.2,414 L245.8,414 C235.719055,414 230.678582,414 226.828171,412.038117 C220.797215,408.965192 217,402.7687 217,396 C217,389.2313 220.797215,383.034808 226.828171,379.961883 C230.678582,378 235.719055,378 245.8,378 L444.2,378 C454.280945,378 459.321418,378 463.171829,379.961883 Z M559.171829,311.961883 C565.202785,315.034808 569,321.2313 569,328 C569,334.7687 565.202785,340.965192 559.171829,344.038117 C555.321418,346 550.280945,346 540.2,346 L245.8,346 C235.719055,346 230.678582,346 226.828171,344.038117 C220.797215,340.965192 217,334.7687 217,328 C217,321.2313 220.797215,315.034808 226.828171,311.961883 C230.678582,310 235.719055,310 245.8,310 L540.2,310 C550.280945,310 555.321418,310 559.171829,311.961883 Z M627.171829,243.961883 C633.202785,247.034808 637,253.2313 637,260 C637,266.7687 633.202785,272.965192 627.171829,276.038117 C623.321418,278 618.280945,278 608.2,278 L245.8,278 C235.719055,278 230.678582,278 226.828171,276.038117 C220.797215,272.965192 217,266.7687 217,260 C217,253.2313 220.797215,247.034808 226.828171,243.961883 C230.678582,242 235.719055,242 245.8,242 L608.2,242 C618.280945,242 623.321418,242 627.171829,243.961883 Z" id="path-1"></path>
+        <path d="M803,830 L205,830 L205,430 L803,430 Z M463.171829,379.961883 C469.202785,383.034808 473,389.2313 473,396 C473,402.7687 469.202785,408.965192 463.171829,412.038117 C459.321418,414 454.280945,414 444.2,414 L245.8,414 C235.719055,414 230.678582,414 226.828171,412.038117 C220.797215,408.965192 217,402.7687 217,396 C217,389.2313 220.797215,383.034808 226.828171,379.961883 C230.678582,378 235.719055,378 245.8,378 L444.2,378 C454.280945,378 459.321418,378 463.171829,379.961883 Z M559.171829,311.961883 C565.202785,315.034808 569,321.2313 569,328 C569,334.7687 565.202785,340.965192 559.171829,344.038117 C555.321418,346 550.280945,346 540.2,346 L245.8,346 C235.719055,346 230.678582,346 226.828171,344.038117 C220.797215,340.965192 217,334.7687 217,328 C217,321.2313 220.797215,315.034808 226.828171,311.961883 C230.678582,310 235.719055,310 245.8,310 L540.2,310 C550.280945,310 555.321418,310 559.171829,311.961883 Z M627.171829,243.961883 C633.202785,247.034808 637,253.2313 637,260 C637,266.7687 633.202785,272.965192 627.171829,276.038117 C623.321418,278 618.280945,278 608.2,278 L245.8,278 C235.719055,278 230.678582,278 226.828171,276.038117 C220.797215,272.965192 217,266.7687 217,260 C217,253.2313 220.797215,247.034808 226.828171,243.961883 C230.678582,242 235.719055,242 245.8,242 L608.2,242 C618.280945,242 623.321418,242 627.171829,243.961883 Z" id="path-1"></path>
         <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
-            <stop stop-color="#FFFFFF" offset="0%"></stop>
-            <stop stop-color="#E2E5EC" offset="100%"></stop>
+            <stop stop-color="#A4A7AE" offset="0%"></stop>
+            <stop stop-color="#868990" offset="100%"></stop>
         </linearGradient>
         <path d="M28.8,0 L391.2,0 C401.280945,0 406.321418,0 410.171829,1.96188256 C416.202785,5.03480808 420,11.2313 420,18 C420,24.7687 416.202785,30.9651919 410.171829,34.0381174 C406.321418,36 401.280945,36 391.2,36 L28.8,36 C18.7190549,36 13.6785823,36 9.828171,34.0381174 C3.79721511,30.9651919 0,24.7687 0,18 C0,11.2313 3.79721511,5.03480808 9.828171,1.96188256 C13.6785823,0 18.7190549,0 28.8,0 Z" id="path-3"></path>
         <filter x="-3.3%" y="-27.8%" width="106.7%" height="177.8%" filterUnits="objectBoundingBox" id="filter-4">
@@ -19,8 +19,8 @@
             <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.141176471 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
         </filter>
         <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-6">
-            <stop stop-color="#FFFFFF" offset="0%"></stop>
-            <stop stop-color="#E2E5EC" offset="100%"></stop>
+            <stop stop-color="#A4A7AE" offset="0%"></stop>
+            <stop stop-color="#868990" offset="100%"></stop>
         </linearGradient>
         <path d="M28.8,68 L323.2,68 C333.280945,68 338.321418,68 342.171829,69.9618826 C348.202785,73.0348081 352,79.2313 352,86 C352,92.7687 348.202785,98.9651919 342.171829,102.038117 C338.321418,104 333.280945,104 323.2,104 L28.8,104 C18.7190549,104 13.6785823,104 9.828171,102.038117 C3.79721511,98.9651919 0,92.7687 0,86 C0,79.2313 3.79721511,73.0348081 9.828171,69.9618826 C13.6785823,68 18.7190549,68 28.8,68 Z" id="path-7"></path>
         <filter x="-4.0%" y="-27.8%" width="108.0%" height="177.8%" filterUnits="objectBoundingBox" id="filter-8">
@@ -35,8 +35,8 @@
             <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.141176471 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
         </filter>
         <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-10">
-            <stop stop-color="#FFFFFF" offset="0%"></stop>
-            <stop stop-color="#E2E5EC" offset="100%"></stop>
+            <stop stop-color="#A4A7AE" offset="0%"></stop>
+            <stop stop-color="#868990" offset="100%"></stop>
         </linearGradient>
         <path d="M28.8,136 L227.2,136 C237.280945,136 242.321418,136 246.171829,137.961883 C252.202785,141.034808 256,147.2313 256,154 C256,160.7687 252.202785,166.965192 246.171829,170.038117 C242.321418,172 237.280945,172 227.2,172 L28.8,172 C18.7190549,172 13.6785823,172 9.828171,170.038117 C3.79721511,166.965192 0,160.7687 0,154 C0,147.2313 3.79721511,141.034808 9.828171,137.961883 C13.6785823,136 18.7190549,136 28.8,136 Z" id="path-11"></path>
         <filter x="-5.5%" y="-27.8%" width="110.9%" height="177.8%" filterUnits="objectBoundingBox" id="filter-12">
@@ -51,8 +51,8 @@
             <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.141176471 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
         </filter>
         <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-14">
-            <stop stop-color="#FFFFFF" offset="0%"></stop>
-            <stop stop-color="#E2E5EC" offset="100%"></stop>
+            <stop stop-color="#A4A7AE" offset="0%"></stop>
+            <stop stop-color="#868990" offset="100%"></stop>
         </linearGradient>
         <path d="M28.8,204 L405.2,204 C415.280945,204 420.321418,204 424.171829,205.961883 C430.202785,209.034808 434,215.2313 434,222 C434,228.7687 430.202785,234.965192 424.171829,238.038117 C420.321418,240 415.280945,240 405.2,240 L28.8,240 C18.7190549,240 13.6785823,240 9.828171,238.038117 C3.79721511,234.965192 0,228.7687 0,222 C0,215.2313 3.79721511,209.034808 9.828171,205.961883 C13.6785823,204 18.7190549,204 28.8,204 Z" id="path-15"></path>
         <filter x="-3.2%" y="-27.8%" width="106.5%" height="177.8%" filterUnits="objectBoundingBox" id="filter-16">
@@ -66,16 +66,20 @@
             <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
             <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.141176471 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
         </filter>
-        <text id="text-18" font-family="JetBrainsMono-Bold, JetBrains Mono" font-size="330" font-weight="bold" line-spacing="400" fill="#FFFFFF">
-            <tspan x="-12" y="525">&gt;_</tspan>
-        </text>
+        <path d="M13.08 488.52V450.57L108.78 406.35Q115.38 403.38 121.815 401.4Q128.25 399.42 131.88 398.43Q128.25 397.77 121.65 395.79Q115.05 393.81 108.78 391.17L13.08 346.62V308.01L160.92 377.64V418.89Z" id="text-18"></path>
         <filter x="-3.5%" y="-2.5%" width="107.0%" height="107.0%" filterUnits="objectBoundingBox" id="filter-19">
             <feOffset dx="0" dy="4" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
             <feGaussianBlur stdDeviation="4" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
             <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.4 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
         </filter>
+        <path d="M205.8 552.54V515.25H364.2V552.54Z" id="text-20"></path>
+        <filter x="-3.5%" y="-2.5%" width="107.0%" height="107.0%" filterUnits="objectBoundingBox" id="filter-21">
+            <feOffset dx="0" dy="4" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="4" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.4 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
     </defs>
-    <g id="Apps-/-Terminal-1024" stroke="none" fill="none" xlink:href="#path-1" fill-rule="evenodd" stroke-width="1">
+    <g id="TMP-export-fg" stroke="none" fill="none" xlink:href="#path-1" fill-rule="evenodd" stroke-width="1">
         <g id="Artwork" transform="translate(217, 242)">
             <g id="Output-Line-1">
                 <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-3"></use>
@@ -97,10 +101,13 @@
                 <use fill="url(#linearGradient-14)" fill-rule="evenodd" xlink:href="#path-15"></use>
                 <use fill="black" fill-opacity="1" filter="url(#filter-17)" xlink:href="#path-15"></use>
             </g>
-            <g id="Prompt" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF" stroke-width="12">
-                <use fill="#FFFFFF" fill-opacity="1" stroke-opacity="1" filter="url(#filter-19)" xlink:href="#text-18"></use>
-                <use fill="#FFFFFF" fill-opacity="1" stroke-opacity="1" xlink:href="#text-18"></use>
+            <g id="Prompt" fill="#FFFFFF" fill-opacity="1">
+                <use filter="url(#filter-19)" xlink:href="#text-18"></use>
                 <use xlink:href="#text-18"></use>
+            </g>
+            <g id="Cursor" fill="#A4A7AE" fill-opacity="1">
+                <use filter="url(#filter-21)" xlink:href="#text-20"></use>
+                <use xlink:href="#text-20"></use>
             </g>
         </g>
     </g>
