@@ -337,6 +337,35 @@ void main() {
     },
   );
 
+  test(
+    'the profile colours are told to the embedder, at the start and when they change',
+    () async {
+      final pty = FakePty();
+      final s = TerminalSession(pty: pty);
+      const dark = PtyTheme(
+        foreground: 0xe6e6e6,
+        background: 0x262c38,
+        cursor: 0x9d9d9d,
+        ansi: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      );
+      s.setTheme(dark);
+      await s.attach(24, 80);
+      expect(pty.spawns.single.theme, dark);
+      s.setTheme(dark);
+      expect(pty.calls.where((c) => c.$1 == 'configure'), isEmpty);
+      s.setTheme(
+        const PtyTheme(
+          foreground: 0,
+          background: 0xffffff,
+          cursor: 0,
+          ansi: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        ),
+      );
+      expect((pty.calls.last.$3! as Map)['theme'], isA<PtyTheme>());
+      expect(dark.toJson()['ansi'], hasLength(16));
+    },
+  );
+
   test('a new profile reaches the running grid', () async {
     final (pty, s) = await started();
     s.apply(

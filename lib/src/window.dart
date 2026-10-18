@@ -20,6 +20,7 @@ import 'grid.dart';
 import 'inspector.dart';
 import 'l10n.dart';
 import 'links.dart';
+import 'pty.dart';
 import 'session.dart';
 import 'settings.dart';
 import 'settings_window.dart';
@@ -155,7 +156,7 @@ class TerminalWindowState extends State<TerminalWindow>
       if (_tabs.isNotEmpty) _tab.decor.update(active: active);
       // An inactive window shows a hollow cursor and a grey selection.
       if (active) {
-        _app.active = this;
+        _app.claimMenus(this);
         if (!_finding && _prompt == null) _tab.focus.requestFocus();
       }
     },
@@ -191,6 +192,8 @@ class TerminalWindowState extends State<TerminalWindow>
     _lifecycle;
     _app.windows.add(this);
     _app.active ??= this;
+    _app.menuOwner.addListener(_ownerChanged);
+    if (_app.menuOwner.value == null) _app.menuOwner.value = this;
     _settings.addListener(_settingsChanged);
     PrimarySelection.listenable.addListener(_changed);
     SilicaWindows.onMainCloseRequested = requestCloseWindow;
@@ -212,6 +215,8 @@ class TerminalWindowState extends State<TerminalWindow>
   @override
   void dispose() {
     _app.windows.remove(this);
+    _app.menuOwner.removeListener(_ownerChanged);
+    _app.releaseMenus(this);
     if (_app.active == this) {
       _app.active = _app.windows.isEmpty ? null : _app.windows.first;
     }
@@ -235,6 +240,20 @@ class TerminalWindowState extends State<TerminalWindow>
     _queryFocus.dispose();
     _prompt?.controller.dispose();
     super.dispose();
+  }
+
+  void _ownerChanged() {
+    if (!mounted) return;
+    // Another window may let go of the menu bar while the tree is being built or torn down.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.transientCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+    setState(() {});
   }
 
   void _settingsChanged() {
@@ -323,6 +342,9 @@ class TerminalWindowState extends State<TerminalWindow>
     if (session.split != null) session.closeSplit();
     final tab = _Tab(session);
     tab.bellListener = () => _belled(tab);
+    tab.focus.addListener(() {
+      if (tab.focus.hasFocus && mounted) _app.claimMenus(this);
+    });
     session.grid.bells.addListener(tab.bellListener!);
     session.addListener(_changed);
     session.grid.addListener(_gridChanged);
@@ -979,7 +1001,48 @@ class TerminalWindowState extends State<TerminalWindow>
     ),
   );
 
-  Future<void> _openSettings() => TerminalSettingsWindow.open(context, _app);
+  bool _settingsSheet = false;
+
+  /// Terminal › Settings… (⌘,): a window of its own; where Silica opens none, a sheet over
+  /// this one.
+  Future<void> _openSettings() async {
+    final opened = await TerminalSettingsWindow.open(context, _app);
+    if (!opened && mounted) setState(() => _settingsSheet = true);
+  }
+
+  Widget _settingsOverlay() => Positioned.fill(
+    key: const ValueKey('settings sheet'),
+    child: ColoredBox(
+      color: const Color(0x33000000),
+      child: Center(
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final width = box.maxWidth.clamp(0, settingsWindowSize.width);
+            final height = box.maxHeight.clamp(0, settingsWindowSize.height);
+            return SizedBox(
+              width: width.toDouble(),
+              height: height.toDouble(),
+              child: Stack(
+                children: [
+                  Positioned.fill(child: TerminalSettingsView(app: _app)),
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: AmalfiPushButton(
+                      key: const ValueKey('settings close'),
+                      label: l10n.findDone,
+                      size: AmalfiControlSize.small,
+                      onPressed: () => setState(() => _settingsSheet = false),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
 
   bool _about = false;
   bool _inspecting = false;
@@ -1020,6 +1083,16 @@ class TerminalWindowState extends State<TerminalWindow>
     final colors = profile.scheme == 'default'
         ? base.grid
         : (extraProfiles[profile.scheme] ?? base.grid);
+    session.setTheme(
+      PtyTheme(
+        foreground: colors.foreground.toARGB32() & 0xffffff,
+        background: colors.background.toARGB32() & 0xffffff,
+        cursor: colors.cursor.toARGB32() & 0xffffff,
+        ansi: [
+          for (var i = 0; i < 16; i++) colors.indexed(i).toARGB32() & 0xffffff,
+        ],
+      ),
+    );
     return TerminalLook(
       colors: colors,
       selection: _windowActive ? colors.selection : base.inactiveSelection,
@@ -1064,38 +1137,51 @@ class TerminalWindowState extends State<TerminalWindow>
         ),
       ),
     );
-    return SilicaMenuBar(
-      menus: menus(AppLocalizations.of(context)),
-      child:
-          _confirming == null &&
-              _confirmingWindow == null &&
-              _prompt == null &&
-              !_about &&
-              !_inspecting
-          ? content
-          : Stack(
-              fit: StackFit.expand,
-              children: [
-                content,
-                if (_inspecting)
-                  Positioned(
-                    key: const ValueKey('inspector panel'),
-                    top: chromeHeight,
-                    right: 12,
-                    child: InspectorView(
-                      window: this,
-                      onClose: () => setState(() => _inspecting = false),
-                    ),
+    final body =
+        _confirming == null &&
+            _confirmingWindow == null &&
+            _prompt == null &&
+            !_about &&
+            !_settingsSheet &&
+            !_inspecting
+        ? content
+        : Stack(
+            fit: StackFit.expand,
+            children: [
+              content,
+              if (_inspecting)
+                Positioned(
+                  key: const ValueKey('inspector panel'),
+                  top: chromeHeight,
+                  right: 12,
+                  child: InspectorView(
+                    window: this,
+                    onClose: () => setState(() => _inspecting = false),
                   ),
-                if (_about) _aboutOverlay(),
-                if (_prompt != null)
-                  _promptOverlay()
-                else if (_confirming != null || _confirmingWindow != null)
-                  _confirmOverlay(),
-              ],
-            ),
+                ),
+              if (_about) _aboutOverlay(),
+              if (_settingsSheet) _settingsOverlay(),
+              if (_prompt != null)
+                _promptOverlay()
+              else if (_confirming != null || _confirmingWindow != null)
+                _confirmOverlay(),
+            ],
+          );
+    // Only the window that owns the menu bar builds one; the body keeps its state either way.
+    final keyed = Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _app.claimMenus(this),
+      child: KeyedSubtree(key: _bodyKey, child: body),
     );
+    return _app.menuOwner.value == this
+        ? SilicaMenuBar(
+            menus: menus(AppLocalizations.of(context)),
+            child: keyed,
+          )
+        : keyed;
   }
+
+  final GlobalKey _bodyKey = GlobalKey();
 
   Widget _view(_Tab tab, TerminalProfile profile, {required int view}) =>
       TerminalView(

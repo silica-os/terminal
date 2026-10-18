@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
@@ -66,6 +67,46 @@ class TerminalApp {
 
   /// The window that has the keyboard (or the last that had it).
   TerminalWindowState? active;
+
+  /// The window whose menus are in the menu bar: Flutter lets one menu bar exist at a time,
+  /// so the windows take turns; a window builds its bar only while it is the owner.
+  final ValueNotifier<TerminalWindowState?> menuOwner = ValueNotifier(null);
+
+  /// [window] wants the menu bar (it got the keyboard or the pointer). The window that has
+  /// it lets go first and the new one takes over a frame later.
+  void claimMenus(TerminalWindowState window) {
+    active = window;
+    final owner = menuOwner.value;
+    if (owner == window) return;
+    if (owner == null) {
+      menuOwner.value = window;
+      return;
+    }
+    menuOwner.value = null;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (active == window && windows.contains(window)) {
+        menuOwner.value = window;
+      } else if (menuOwner.value == null && windows.isNotEmpty) {
+        menuOwner.value = active != null && windows.contains(active)
+            ? active
+            : windows.first;
+      }
+    });
+    SchedulerBinding.instance.ensureVisualUpdate();
+  }
+
+  /// [window] is going away: another one takes the menu bar.
+  void releaseMenus(TerminalWindowState window) {
+    if (menuOwner.value != window) return;
+    menuOwner.value = null;
+    final rest = windows.where((w) => w != window).toList();
+    if (rest.isEmpty) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (menuOwner.value == null && windows.isNotEmpty) {
+        menuOwner.value = windows.contains(active) ? active : windows.first;
+      }
+    });
+  }
 
   /// Opens a window; false if the system cannot open one.
   Future<bool> openWindow(WindowSeed seed) async {

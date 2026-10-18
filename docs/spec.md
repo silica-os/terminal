@@ -23,9 +23,13 @@ until they arrive, the values in `lib/src/style.dart` are provisional.
 
 ## Emulator
 
-xterm.dart (MIT): VT100/xterm sequences, 256 colours and true colour, alternate screen, mouse
-reporting, bracketed paste, OSC title, 10 000 lines of scrollback, selection with the mouse.
-Output is decoded as a UTF-8 stream (a character split between two messages arrives whole).
+The embedder emulates the terminal (alacritty_terminal on a thread of its own, `silica/pty`
+with `grid: true`) and sends the rows that changed once per frame; Terminal paints them. VT100 to
+xterm sequences, 256 colours and true colour, alternate screen, bracketed paste, OSC 0/2 titles,
+OSC 4/10/11/12 colours (the profile's), OSC 7 directory, OSC 8 links, OSC 52 clipboard, OSC 133
+prompt marks, the xterm title stack, synchronized updates; 10 000 lines of scrollback by default
+(a profile setting). What the engine does differently from the specifications:
+[conformance.md](conformance.md). Output is decoded as UTF-8 in the embedder.
 
 ## Process
 
@@ -61,32 +65,38 @@ Output is decoded as a UTF-8 stream (a character split between two messages arri
 
 ## Menus
 
-Published to Silica's menu bar (silica-ui `SilicaMenuBar`, silica-desktop#25), as measured in
-TE-01:
+Published to Silica's menu bar, as measured in TE-01. Only items that work are drawn; what the
+desktop cannot serve is left out (see "Not offered" below). With several windows the one that
+has the keyboard owns the bar.
 
-- **Terminal** (app menu): Secure Keyboard Entry (disabled), Services, Hide, Hide Others, Show
-  All and Quit from the system. No About or Settings… yet (the app has neither).
-- **Shell**: New Tab › New Tab with Profile - Basic ⌘T, with Same Command ⌃⌘T, Basic (all open
-  a tab: Terminal has the one profile and every tab runs the same command); Close Tab / Close
-  Window ⌘W (asks before ending a running program). New Window, New Command, New Remote
-  Connection, Open, Close All, settings and text export, inspector, title and background,
-  Reset, Hard Reset and printing are shown disabled.
-- **Edit**: Copy ⌘C (only with a selection), Paste ⌘V, Select All ⌘A; Find › Find… ⌘F, Find
-  Next ⌘G, Find Previous ⇧⌘G (with matches), Hide Find Bar ⇧⌘F, Use Selection for Find ⌘E (with
-  a selection). Undo, Redo, Cut, Copy Special, Paste Escaped Text, Paste Selection, marks,
-  bookmarks, navigation, clearing, Show Colors, Option as Meta and Num Lock are disabled.
-- **View**: Scroll to Top / Bottom, Page Up / Down, Line Up / Down, Full Screen from the
-  system. Tab list and tab bar, alternate screen, mouse reporting (checked), split pane and font
-  size are disabled.
-- **Window**: Show Previous / Next Tab (from two tabs), then the system part of the bar. Move Tab
-  to New Window, Merge All Windows and the window groups are disabled.
-- **Help**: Silica Help from the bar; the man page items are disabled.
+- **Terminal** (app menu): About Terminal, Settings… ⌘, then the system items.
+- **Shell**: New Window and New Tab ⌘N / ⌘T (each with a submenu of the profiles; ⌃⌘ keeps the
+  command), New Command… ⇧⌘N, New Remote Connection… ⇧⌘K (`ssh`), Close Tab / Close Window ⌘W
+  (asks per the profile), Close All ⌥⌘W, Use Settings as Default, Show Inspector ⌘I, Edit Title
+  ⇧⌘I, Reset ⌥⌘R, Hard Reset ⌃⌥⌘R.
+- **Edit**: Copy, Paste, Paste Escaped Text ⌃⌘V, Paste Selection ⇧⌘V (and escaped), Select All,
+  Select Between Marks ⇧⌘A; Marks (automatic prompt marks, Mark ⌘U, Remove Mark ⇧⌘U); Navigate
+  (previous and next mark ⌘↑ ⌘↓); Clear to Previous Mark ⌘L, Clear to Start ⌘K, Clear Screen
+  ⌃⌘L; Find (Find…, Next, Previous, Hide Find Bar, Use Selection for Find, Jump to
+  Selection ⌘J); Use Option as Meta Key ⌥⌘O. Undo, Redo and Cut are disabled: a terminal has none.
+- **View**: Show / Hide Tab Bar ⇧⌘T, Hide / Show Marks, Allow Mouse Reporting ⌘R, Split Pane
+  ⌘D / Close Split Pane ⇧⌘D, Default Font Size ⌘0, Bigger ⌘+, Smaller ⌘−, scrolling (top, bottom,
+  page, line), Full Screen from the system.
+- **Window**: Show Previous / Next Tab, Move Tab to New Window, Merge All Windows, Open Window
+  Group, Save Windows as Group…, then the system part of the bar.
+- **Help**: Open man Page for Selection ⌃⌘?, Search man Page Index for Selection (a tab runs
+  `man`).
+
+Not offered, each with its reason in the issues of the repository: Open…, Export Settings…,
+Export Text As…, Print (no file dialog or print service), Copy Special (the clipboard carries
+plain text), Bookmarks and Select to Mark, Show Colors, Edit Background Color, Num Lock, Fill
+Screen, Remove Excess Lines, Show All Tabs, Show / Hide Alternate Screen, Secure Keyboard Entry.
 
 ## Pseudo-terminal channel
 
 `silica/pty`, JSONMethodCodec, implemented by the embedder of silica-desktop (issue #17):
 
-- app → embedder: `spawn {command?, cwd?, env?, rows, cols}` → `{id}`; `write {id, data}`
-  (base64); `resize {id, rows, cols, pixelWidth?, pixelHeight?}`; `signal {id, signal}`
-  (`INT`, `TERM`, `HUP`, `KILL`); `close {id}`.
-- embedder → app: `output {id, data}` (base64), `exit {id, code?, signal?}`.
+The protocol is documented in `docs/protocols.md` of silica-desktop (grid sessions, scrolling,
+selection, search, marks, split views). Terminal uses `spawn {grid: true, …}`, `grid` frames,
+`exit`, and the calls `write`, `resize`, `signal`, `close`, `busy`, `cwd`, `scroll`, `select`,
+`selectionText`, `search`, `mark`, `clear`, `reset`, `configure`, `clipboard`, `split`.

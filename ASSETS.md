@@ -17,7 +17,6 @@ Every non-code file has a row here: author, license, source. The icon of Termina
 
 | Package | License | Use |
 | --- | --- | --- |
-| [`xterm`](https://pub.dev/packages/xterm) 4.0.0 (xterm.dart) | MIT | the terminal emulator and its view |
 | `icon/background-dark.svg` | Silica project | CC BY-SA 4.0 | `silica-icons` `apps/terminal` (branch `amalfi-icons`, 2713df9) |
 | `icon/background.svg` | Silica project | CC BY-SA 4.0 | `silica-icons` `apps/terminal` (branch `amalfi-icons`, 2713df9) |
 | `icon/foreground-dark.svg` | Silica project | CC BY-SA 4.0 | `silica-icons` `apps/terminal` (branch `amalfi-icons`, 2713df9) |

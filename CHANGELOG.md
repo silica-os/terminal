@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- The emulator is the embedder's grid engine (alacritty_terminal in Rust); xterm.dart is gone.
+  Flutter paints the rows of a session. Scrollback viewing with the measured scroller, mouse
+  selection (character, word, line, rectangle), primary selection, mouse reporting (X10,
+  normal, button, any; SGR and UTF-8; Shift selects), focus reports, Command+click on URLs and
+  OSC 8 links, file drops, the bell (flash and notification), font zoom, OSC 7 (new tabs open
+  where the shell is), OSC 52 (reading off by default), OSC 133 marks (jump, Select Between
+  Marks, Clear to Previous Mark), split view, new windows, window groups, Move Tab to New
+  Window, Merge All Windows, the inspector, About, and Settings (General, Profiles, Window
+  Groups, Encodings). Menu items the desktop cannot serve are no longer drawn disabled.
+  Conformance: docs/conformance.md. Performance: docs/performance.md.
+
 - Closing the window (Logo+W, the close button) with a program running in any tab asks first:
   "Do you want to terminate running processes in this window?" (silica_ui 0.35.0
   `SilicaWindows.onMainCloseRequested`; needs silica-desktop with `closeRequested` for the main

@@ -197,6 +197,7 @@ class TerminalSession extends ChangeNotifier {
         clipboardRead: _clipboardRead,
         cursor: profile.cursor.name,
         cursorBlink: profile.cursorBlink,
+        theme: _theme,
       );
     } on Object catch (error) {
       _error = error;
@@ -348,6 +349,18 @@ class TerminalSession extends ChangeNotifier {
     pty
         .scroll(id, lines: lines, page: page, to: to, row: row, view: view)
         .ignore();
+  }
+
+  /// The profile's colours, which programs may ask for; set before the session starts and
+  /// whenever they change.
+  PtyTheme? get theme => _theme;
+  PtyTheme? _theme;
+
+  void setTheme(PtyTheme theme) {
+    if (theme == _theme) return;
+    _theme = theme;
+    final id = _id;
+    if (id != null && !_ended) pty.configure(id, theme: theme).ignore();
   }
 
   bool _splitOpened = false;

@@ -16,6 +16,43 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+/// The colours programs may ask for (OSC 4, 10, 11, 12), 0xRRGGBB: the profile's, so that vim
+/// and others pick a light or a dark scheme to match.
+@immutable
+class PtyTheme {
+  const PtyTheme({
+    required this.foreground,
+    required this.background,
+    required this.cursor,
+    required this.ansi,
+  });
+  final int foreground;
+  final int background;
+  final int cursor;
+
+  /// The 16 ANSI colours.
+  final List<int> ansi;
+
+  Map<String, Object> toJson() => {
+    'foreground': foreground,
+    'background': background,
+    'cursor': cursor,
+    'ansi': ansi,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is PtyTheme &&
+      other.foreground == foreground &&
+      other.background == background &&
+      other.cursor == cursor &&
+      listEquals(other.ansi, ansi);
+
+  @override
+  int get hashCode =>
+      Object.hash(foreground, background, cursor, Object.hashAll(ansi));
+}
+
 /// Something that happened to a pseudo-terminal.
 @immutable
 sealed class PtyEvent {
@@ -66,6 +103,7 @@ abstract class PtyBackend {
     bool? clipboardRead,
     String? cursor,
     bool? cursorBlink,
+    PtyTheme? theme,
   });
 
   Future<void> write(int id, Uint8List data);
@@ -130,6 +168,7 @@ abstract class PtyBackend {
     bool? clipboardRead,
     String? cursor,
     bool? cursorBlink,
+    PtyTheme? theme,
   });
 
   /// Answers a clipboard read of the program (OSC 52).
@@ -227,6 +266,7 @@ class SilicaPty implements PtyBackend {
     bool? clipboardRead,
     String? cursor,
     bool? cursorBlink,
+    PtyTheme? theme,
   }) async {
     final reply = await _invoke('spawn', {
       'command': ?command,
@@ -240,6 +280,7 @@ class SilicaPty implements PtyBackend {
       'clipboardRead': ?clipboardRead,
       'cursor': ?cursor,
       'cursorBlink': ?cursorBlink,
+      'theme': ?theme?.toJson(),
     });
     final id = reply is Map ? reply['id'] : null;
     if (id is! int) {
@@ -371,6 +412,7 @@ class SilicaPty implements PtyBackend {
     bool? clipboardRead,
     String? cursor,
     bool? cursorBlink,
+    PtyTheme? theme,
   }) => _invoke('configure', {
     'id': id,
     'scrollback': ?scrollback,
@@ -378,6 +420,7 @@ class SilicaPty implements PtyBackend {
     'clipboardRead': ?clipboardRead,
     'cursor': ?cursor,
     'cursorBlink': ?cursorBlink,
+    'theme': ?theme?.toJson(),
   });
 
   @override
@@ -424,7 +467,9 @@ class FakeSpawn {
     this.clipboardRead,
     this.cursor,
     this.cursorBlink,
+    this.theme,
   });
+  final PtyTheme? theme;
   final String? cursor;
   final bool? cursorBlink;
   final List<String>? command;
@@ -471,6 +516,7 @@ class FakePty implements PtyBackend {
     bool? clipboardRead,
     String? cursor,
     bool? cursorBlink,
+    PtyTheme? theme,
   }) async {
     final error = spawnError;
     if (error != null) throw error;
@@ -486,6 +532,7 @@ class FakePty implements PtyBackend {
         clipboardRead: clipboardRead,
         cursor: cursor,
         cursorBlink: cursorBlink,
+        theme: theme,
       ),
     );
     sizes[id] = (rows, cols);
@@ -599,6 +646,7 @@ class FakePty implements PtyBackend {
     bool? clipboardRead,
     String? cursor,
     bool? cursorBlink,
+    PtyTheme? theme,
   }) async => calls.add((
     'configure',
     id,
@@ -608,6 +656,7 @@ class FakePty implements PtyBackend {
       'clipboardRead': clipboardRead,
       'cursor': cursor,
       'cursorBlink': cursorBlink,
+      'theme': theme,
     },
   ));
 
