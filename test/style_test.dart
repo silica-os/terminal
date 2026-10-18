@@ -37,15 +37,19 @@ void main() {
     expect(painter.height, moreOrLessEquals(16, epsilon: 0.05));
   });
 
-  test('the ANSI palette as measured', () {
-    expect(ansiNormal, hasLength(8));
-    expect(ansiBright, hasLength(8));
-    expect(ansiNormal[1], const Color(0xFF990100));
-    expect(ansiNormal[7], const Color(0xFFBFBFBF));
-    expect(ansiBright[0], const Color(0xFF666666));
-    expect(ansiBright[4], const Color(0xFF0033FF));
-    expect(lightProfile.grid.indexed(1), ansiNormal[1]);
-    expect(lightProfile.grid.indexed(15), ansiBright[7]);
+  test('the ANSI palettes follow the appearance', () {
+    for (final palette in [
+      ansiLightNormal,
+      ansiLightBright,
+      ansiDarkNormal,
+      ansiDarkBright,
+    ]) {
+      expect(palette, hasLength(8));
+    }
+    expect(lightProfile.grid.indexed(1), ansiLightNormal[1]);
+    expect(lightProfile.grid.indexed(15), ansiLightBright[7]);
+    expect(darkProfile.grid.indexed(1), ansiDarkNormal[1]);
+    expect(darkProfile.grid.indexed(9), ansiDarkBright[1]);
     // The xterm cube and the greys.
     expect(lightProfile.grid.indexed(16), const Color(0xFF000000));
     expect(lightProfile.grid.indexed(196), const Color(0xFFFF0000));

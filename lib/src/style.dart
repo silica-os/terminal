@@ -155,30 +155,50 @@ Size get minimumWindowSize => Size(
 /// default is steady.
 const Duration cursorBlinkHalf = Duration(milliseconds: 500);
 
-/// The ANSI palette, identical in light and dark (sRGB).
-const List<Color> ansiNormal = [
-  Color(0xFF000000),
-  Color(0xFF990100),
-  Color(0xFF00A502),
-  Color(0xFF999901),
-  Color(0xFF0021B2),
-  Color(0xFFB200B2),
-  Color(0xFF02A5B3),
-  Color(0xFFBFBFBF),
+/// Our ANSI palettes, one per appearance (the window surface decides which): every colour
+/// but the blacks and the greys reads at 4.5:1 or more on its surface.
+const List<Color> ansiLightNormal = [
+  Color(0xFF3B4652),
+  Color(0xFFB3433A),
+  Color(0xFF2F7D4B),
+  Color(0xFF8A6A12),
+  Color(0xFF2F63A8),
+  Color(0xFF7B4AA0),
+  Color(0xFF1F7C85),
+  Color(0xFF6A7580),
 ];
-const List<Color> ansiBright = [
-  Color(0xFF666666),
-  Color(0xFFE60000),
-  Color(0xFF02D801),
-  Color(0xFFE6E600),
-  Color(0xFF0033FF),
-  Color(0xFFE500E5),
-  Color(0xFF03E6E6),
-  Color(0xFFE5E5E5),
+const List<Color> ansiLightBright = [
+  Color(0xFF56616E),
+  Color(0xFFC9352B),
+  Color(0xFF246B3E),
+  Color(0xFF7A5A08),
+  Color(0xFF1F55A0),
+  Color(0xFF6B3A94),
+  Color(0xFF176B73),
+  Color(0xFF4E5864),
+];
+const List<Color> ansiDarkNormal = [
+  Color(0xFF2A2D33),
+  Color(0xFFE3857A),
+  Color(0xFF86C494),
+  Color(0xFFD6B96C),
+  Color(0xFF78AEE3),
+  Color(0xFFC096DB),
+  Color(0xFF76C7CC),
+  Color(0xFFC8CCD2),
+];
+const List<Color> ansiDarkBright = [
+  Color(0xFF50555E),
+  Color(0xFFF59A8F),
+  Color(0xFF9DDAAA),
+  Color(0xFFEFD282),
+  Color(0xFF93C3F0),
+  Color(0xFFD7AEEB),
+  Color(0xFF92DDE1),
+  Color(0xFFF0F2F5),
 ];
 
-/// A colour profile of the grid (values measured on the reference's default profiles; the
-/// names are ours).
+/// A colour profile of the grid. The palettes are our own (clean room).
 @immutable
 class GridColors {
   const GridColors({
@@ -187,8 +207,9 @@ class GridColors {
     required this.bold,
     required this.selection,
     required this.cursor,
-    this.normal = ansiNormal,
-    this.bright = ansiBright,
+    this.opacity = 1,
+    this.normal = ansiDarkNormal,
+    this.bright = ansiDarkBright,
   });
 
   final Color background;
@@ -196,8 +217,22 @@ class GridColors {
   final Color bold;
   final Color selection;
   final Color cursor;
+
+  /// How opaque the background is (translucent profiles let the desktop through).
+  final double opacity;
   final List<Color> normal;
   final List<Color> bright;
+
+  GridColors withOpacity(double value) => GridColors(
+    background: background,
+    foreground: foreground,
+    bold: bold,
+    selection: selection,
+    cursor: cursor,
+    opacity: value.clamp(0.3, 1.0),
+    normal: normal,
+    bright: bright,
+  );
 
   /// Entry `i` of the 256-colour palette: the profile's 16 ANSI colours, then the xterm
   /// 6 × 6 × 6 cube and the 24 greys.
@@ -222,93 +257,159 @@ class GridColors {
 
 List<Color> _hex(List<int> values) => [for (final v in values) Color(v)];
 
-/// The other measured default profiles, under our own names (colours only).
+/// The colour schemes of the built-in profiles, under our own names: every one has its
+/// background, text, bold, selection, cursor and 16 ANSI colours (`color_schemes_test.dart`
+/// checks the contrast of each).
 final Map<String, GridColors> extraProfiles = {
-  'night glass': GridColors(
-    background: const Color(0xFF262C38),
-    foreground: const Color(0xFFE6E6E6),
-    bold: const Color(0xFFF0F0F0),
-    selection: const Color(0xFF334D5F),
-    cursor: const Color(0xFF9D9D9D),
+  'slate': GridColors(
+    background: Color(0xFF1E2229),
+    foreground: Color(0xFFD5DAE0),
+    bold: Color(0xFFF2F4F7),
+    selection: Color(0xFF3A4656),
+    cursor: Color(0xFF8FB7D9),
     normal: _hex([
-      0xFF35424B, 0xFFB45647, 0xFF6CAA71, 0xFFC4AC62, //
-      0xFF6D96B4, 0xFFBD7BCD, 0xFF7CCACD, 0xFFDEE5EB,
+      0xFF2B313A, 0xFFD9776C, 0xFF7DB78A, 0xFFC9A95E, //
+      0xFF6FA2D6, 0xFFB58BD1, 0xFF68B9BE, 0xFFB9C0C9,
     ]),
     bright: _hex([
-      0xFF475C6D, 0xFFDF6C5A, 0xFF79BD7E, 0xFFE5C872, //
-      0xFF67B6ED, 0xFFD389E5, 0xFF84DEE0, 0xFFE5EFF5,
+      0xFF4A5260, 0xFFF08D80, 0xFF95CEA2, 0xFFE3C479, //
+      0xFF8DBCEB, 0xFFCDA3E6, 0xFF86D2D6, 0xFFE6EAEF,
     ]),
   ),
-  'day glass': GridColors(
-    background: const Color(0xFFF6F6F6),
-    foreground: const Color(0xFF3A4851),
-    bold: const Color(0xFF303D44),
-    selection: const Color(0xFFE5ECF1),
-    cursor: const Color(0xFF919191),
+  'frost': GridColors(
+    background: Color(0xFFF3F6F9),
+    foreground: Color(0xFF2D3640),
+    bold: Color(0xFF141A20),
+    selection: Color(0xFFC9DAEA),
+    cursor: Color(0xFF3A6EA5),
     normal: _hex([
-      0xFF2C3840, 0xFFB45647, 0xFF6CAA71, 0xFFC4AC62, //
-      0xFF5685A7, 0xFFAD64BE, 0xFF6AC6CA, 0xFFC1C8CC,
+      0xFF3B4652, 0xFFB3433A, 0xFF2F7D4B, 0xFF8A6A12, //
+      0xFF2F63A8, 0xFF7B4AA0, 0xFF1F7C85, 0xFF6A7580,
     ]),
     bright: _hex([
-      0xFF506573, 0xFFDF6C5A, 0xFF79BD7E, 0xFFE5C872, //
-      0xFF49A2E2, 0xFFD389E5, 0xFF77E1E5, 0xFFD8E1E7,
+      0xFF56616E, 0xFFC9352B, 0xFF246B3E, 0xFF7A5A08, //
+      0xFF1F55A0, 0xFF6B3A94, 0xFF176B73, 0xFF4E5864,
     ]),
   ),
-  'meadow': const GridColors(
-    background: Color(0xFF13773D),
-    foreground: Color(0xFFFFF0A5),
-    bold: Color(0xFFFFB03C),
-    selection: Color(0xFFB64826),
-    cursor: Color(0xFF8E2900),
+  'smoke': GridColors(
+    background: Color(0xFF16181C),
+    foreground: Color(0xFFE2E4E8),
+    bold: Color(0xFFFFFFFF),
+    selection: Color(0xFF3B4350),
+    cursor: Color(0xFFA9C4E0),
+    normal: _hex([
+      0xFF2A2D33, 0xFFE3857A, 0xFF86C494, 0xFFD6B96C, //
+      0xFF78AEE3, 0xFFC096DB, 0xFF76C7CC, 0xFFC8CCD2,
+    ]),
+    bright: _hex([
+      0xFF50555E, 0xFFF59A8F, 0xFF9DDAAA, 0xFFEFD282, //
+      0xFF93C3F0, 0xFFD7AEEB, 0xFF92DDE1, 0xFFF0F2F5,
+    ]),
   ),
-  'phosphor': const GridColors(
-    background: Color(0xFF0D0D0D),
-    foreground: Color(0xFF27FE13),
-    bold: Color(0xFF00FA00),
-    selection: Color(0xFF494BDB),
-    cursor: Color(0xFF38FE26),
-  ),
-  'paper': const GridColors(
-    background: Color(0xFFFEF49C),
-    foreground: Color(0xFF000000),
-    bold: Color(0xFF000000),
-    selection: Color(0xFFBFB875),
-    cursor: Color(0xFF9D9D9D),
-  ),
-  'parchment': const GridColors(
-    background: Color(0xFFDFDBC3),
-    foreground: Color(0xFF4D2E2D),
-    bold: Color(0xFF933A21),
-    selection: Color(0xFF929077),
-    cursor: Color(0xFF665656),
-  ),
-  'deep sea': const GridColors(
-    background: Color(0xFF2B66C8),
+  'contrast': GridColors(
+    background: Color(0xFF000000),
     foreground: Color(0xFFFFFFFF),
     bold: Color(0xFFFFFFFF),
-    selection: Color(0xFF2886FF),
-    cursor: Color(0xFF9D9D9D),
+    selection: Color(0xFF2A4F8F),
+    cursor: Color(0xFFFFFF00),
+    normal: _hex([
+      0xFF1A1A1A, 0xFFFF6B6B, 0xFF4DFF7A, 0xFFFFE24D, //
+      0xFF6FA8FF, 0xFFFF7AF0, 0xFF4DFFF0, 0xFFE6E6E6,
+    ]),
+    bright: _hex([
+      0xFF5C5C5C, 0xFFFF9494, 0xFF85FFA3, 0xFFFFF085, //
+      0xFF9CC4FF, 0xFFFFA3F5, 0xFF85FFF5, 0xFFFFFFFF,
+    ]),
   ),
-  'graphite': const GridColors(
-    background: Color(0xFF141414),
-    foreground: Color(0xFFF4F4F4),
+  'phosphor': GridColors(
+    background: Color(0xFF07120A),
+    foreground: Color(0xFF59E07A),
+    bold: Color(0xFF9BFFB2),
+    selection: Color(0xFF1D4D2B),
+    cursor: Color(0xFF8CFFA8),
+    normal: _hex([
+      0xFF0F2A18, 0xFFE0715F, 0xFF59E07A, 0xFFC8D65A, //
+      0xFF5FA8E0, 0xFFC27AE0, 0xFF5FE0C8, 0xFF9FCFA9,
+    ]),
+    bright: _hex([
+      0xFF2F6B43, 0xFFFF8F7D, 0xFF84F59E, 0xFFE6F27A, //
+      0xFF82C4F5, 0xFFDB9AF5, 0xFF82F5E0, 0xFFD2F5DA,
+    ]),
+  ),
+  'amber': GridColors(
+    background: Color(0xFF1C1206),
+    foreground: Color(0xFFF2B24A),
+    bold: Color(0xFFFFD27A),
+    selection: Color(0xFF4D3510),
+    cursor: Color(0xFFFFC45E),
+    normal: _hex([
+      0xFF2E1F0A, 0xFFE2745A, 0xFFB8C75A, 0xFFF2B24A, //
+      0xFF7FA6C9, 0xFFD08AB0, 0xFF72C2A8, 0xFFD9BE8E,
+    ]),
+    bright: _hex([
+      0xFF6B4B1C, 0xFFF59A80, 0xFFD3E27A, 0xFFFFCF6E, //
+      0xFFA0C4E3, 0xFFE6A6C9, 0xFF92DBC2, 0xFFF5E3BE,
+    ]),
+  ),
+  'paper': GridColors(
+    background: Color(0xFFFAF6EC),
+    foreground: Color(0xFF3B3731),
+    bold: Color(0xFF1B1814),
+    selection: Color(0xFFE3D8BC),
+    cursor: Color(0xFF7A4B2A),
+    normal: _hex([
+      0xFF4A453D, 0xFFA63D32, 0xFF3F7A3C, 0xFF8A6414, //
+      0xFF2F5F95, 0xFF84508A, 0xFF2A7A78, 0xFF77705F,
+    ]),
+    bright: _hex([
+      0xFF655F54, 0xFFBA3A2D, 0xFF356E33, 0xFF7A560A, //
+      0xFF255287, 0xFF74407A, 0xFF206B69, 0xFF4D483F,
+    ]),
+  ),
+  'lagoon': GridColors(
+    background: Color(0xFF0E2A3F),
+    foreground: Color(0xFFD3E8F2),
     bold: Color(0xFFFFFFFF),
-    selection: Color(0xFF525252),
-    cursor: Color(0xFF606060),
+    selection: Color(0xFF24557A),
+    cursor: Color(0xFF7FD6E8),
+    normal: _hex([
+      0xFF16384F, 0xFFF0836F, 0xFF7FD39A, 0xFFE8CB6E, //
+      0xFF7DB4F2, 0xFFD29AEB, 0xFF6FDCE0, 0xFFBFD6E2,
+    ]),
+    bright: _hex([
+      0xFF3F6580, 0xFFFFA08D, 0xFF9CEBB2, 0xFFFFE38A, //
+      0xFF9BCBFF, 0xFFE6B4FA, 0xFF8FEFF2, 0xFFEAF6FB,
+    ]),
   ),
-  'desert': const GridColors(
-    background: Color(0xFF8D4136),
-    foreground: Color(0xFFD6C9A7),
-    bold: Color(0xFFE5C72B),
-    selection: Color(0xFF3D1917),
-    cursor: Color(0xFFFFFFFF),
+  'dune': GridColors(
+    background: Color(0xFF2B2118),
+    foreground: Color(0xFFE6D5B8),
+    bold: Color(0xFFFFF1D6),
+    selection: Color(0xFF57432B),
+    cursor: Color(0xFFE0A458),
+    normal: _hex([
+      0xFF3A2D20, 0xFFDE7B5B, 0xFFA6BF5F, 0xFFE0B04C, //
+      0xFF73A3C4, 0xFFC48BA8, 0xFF6FBFA6, 0xFFCDBB9C,
+    ]),
+    bright: _hex([
+      0xFF6B5A44, 0xFFF29675, 0xFFBFD87A, 0xFFF5C86A, //
+      0xFF93BCDA, 0xFFDAA5C0, 0xFF8DD6BD, 0xFFF0E2C8,
+    ]),
   ),
-  'silver': const GridColors(
-    background: Color(0xFF8A8A8A),
-    foreground: Color(0xFF000000),
-    bold: Color(0xFFFFFFFF),
-    selection: Color(0xFF787A9B),
-    cursor: Color(0xFFE0E0E0),
+  'manuscript': GridColors(
+    background: Color(0xFFFBF3C0),
+    foreground: Color(0xFF2E2A1E),
+    bold: Color(0xFF000000),
+    selection: Color(0xFFE3D68E),
+    cursor: Color(0xFF6B3F12),
+    normal: _hex([
+      0xFF3D3829, 0xFFA33224, 0xFF35703A, 0xFF7F5A0A, //
+      0xFF274F8C, 0xFF7A4480, 0xFF1F6F6C, 0xFF6E664F,
+    ]),
+    bright: _hex([
+      0xFF5A533E, 0xFFB52E1F, 0xFF2B6330, 0xFF6F4B00, //
+      0xFF1C4380, 0xFF6A3470, 0xFF165F5C, 0xFF45402D,
+    ]),
   ),
 };
 
@@ -337,6 +438,8 @@ class Profile {
         bold: colors.textPrimary,
         selection: palette.selection,
         cursor: palette.cursor,
+        normal: theme.isDark ? ansiDarkNormal : ansiLightNormal,
+        bright: theme.isDark ? ansiDarkBright : ansiLightBright,
       ),
       inactiveSelection: theme.isDark
           ? inactiveSelectionDark

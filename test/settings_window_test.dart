@@ -189,13 +189,17 @@ void main() {
     await pump(tester, tab: SettingsTab.profiles);
     await tester.tap(find.byKey(const ValueKey('duplicate profile')));
     await tester.pump();
-    expect(app.settings.profiles, hasLength(2));
+    expect(app.settings.profiles, hasLength(12));
     expect(app.settings.profiles.last.name, 'Basic copy');
     expect(find.text('Basic copy'), findsWidgets);
     await tester.tap(find.byKey(const ValueKey('remove profile')));
     await tester.pump();
-    expect(app.settings.profiles, hasLength(1));
+    expect(app.settings.profiles, hasLength(11));
     // The last profile cannot be removed: the button is off.
+    for (final p in app.settings.profiles.skip(1).toList()) {
+      app.settings.removeProfile(p.id);
+    }
+    await tester.pump();
     final remove = tester.widget<AmalfiPushButton>(
       find.byKey(const ValueKey('remove profile')),
     );

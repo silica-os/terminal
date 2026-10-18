@@ -5,11 +5,12 @@ import 'package:terminal/src/settings.dart';
 
 void main() {
   test(
-    'the defaults: one Basic profile, mouse and links on, clipboard read off',
+    'the defaults: Basic and the built-in profiles, mouse and links on, clipboard read off',
     () async {
       final s = TerminalSettings();
       await s.load();
-      expect(s.profiles.map((p) => p.name), ['Basic']);
+      expect(s.profiles.first.name, 'Basic');
+      expect(s.profiles, hasLength(11));
       expect(s.defaultProfile.id, 'basic');
       expect(s.clipboardWrite, isTrue);
       expect(s.clipboardRead, isFalse);
@@ -49,7 +50,7 @@ void main() {
     final s = TerminalSettings();
     final copy = s.duplicateProfile(s.defaultProfile, 'Basic copy');
     expect(copy.id, isNot('basic'));
-    expect(s.profiles, hasLength(2));
+    expect(s.profiles, hasLength(12));
     s.setDefaultProfile(copy.id);
     expect(s.defaultProfile.name, 'Basic copy');
     s.updateProfile(
@@ -58,6 +59,9 @@ void main() {
     expect(s.profileById(copy.id)!.fontSize, 14);
     expect(s.removeProfile(copy.id), isTrue);
     expect(s.defaultProfile.id, 'basic');
+    for (final p in s.profiles.skip(1).toList()) {
+      expect(s.removeProfile(p.id), isTrue);
+    }
     expect(s.removeProfile('basic'), isFalse, reason: 'the last one stays');
     expect(s.removeProfile('nope'), isFalse);
     s.dispose();
@@ -75,7 +79,7 @@ void main() {
       ]) {
         final s = TerminalSettings(store: MemorySettingsStore(text));
         await s.load();
-        expect(s.profiles, hasLength(1), reason: text);
+        expect(s.profiles, hasLength(11), reason: text);
       }
       final odd = jsonEncode({
         'defaultProfile': 'missing',
@@ -114,8 +118,8 @@ void main() {
       });
       final s = TerminalSettings(store: MemorySettingsStore(odd));
       await s.load();
-      expect(s.profiles, hasLength(1));
-      final p = s.profiles.single;
+      expect(s.profiles, hasLength(11));
+      final p = s.profileById('a')!;
       expect(p.fontSize, lessThanOrEqualTo(48));
       expect(p.scrollbackLines, 0);
       expect(p.cursor, CursorStyleChoice.block);

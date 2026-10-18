@@ -542,7 +542,10 @@ class GridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = colors.background);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = colors.background.withValues(alpha: colors.opacity),
+    );
     final origin = Offset(padding.left, padding.top);
     final fill = Paint();
     Rect cells(int y, int x0, int x1) => Rect.fromLTRB(

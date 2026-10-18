@@ -51,6 +51,7 @@ class TerminalProfile {
     this.fontSize = terminalFontSize,
     this.cursor = CursorStyleChoice.block,
     this.cursorBlink = false,
+    this.opacity = 1,
     this.boldText = true,
     this.scrollbackLimited = true,
     this.scrollbackLines = 10000,
@@ -77,6 +78,9 @@ class TerminalProfile {
   final double fontSize;
   final CursorStyleChoice cursor;
   final bool cursorBlink;
+
+  /// How opaque the background is, 0.3 to 1 (translucent profiles).
+  final double opacity;
   final bool boldText;
   final bool scrollbackLimited;
   final int scrollbackLines;
@@ -106,6 +110,7 @@ class TerminalProfile {
     double? fontSize,
     CursorStyleChoice? cursor,
     bool? cursorBlink,
+    double? opacity,
     bool? boldText,
     bool? scrollbackLimited,
     int? scrollbackLines,
@@ -129,6 +134,7 @@ class TerminalProfile {
     fontSize: fontSize ?? this.fontSize,
     cursor: cursor ?? this.cursor,
     cursorBlink: cursorBlink ?? this.cursorBlink,
+    opacity: opacity ?? this.opacity,
     boldText: boldText ?? this.boldText,
     scrollbackLimited: scrollbackLimited ?? this.scrollbackLimited,
     scrollbackLines: scrollbackLines ?? this.scrollbackLines,
@@ -153,6 +159,7 @@ class TerminalProfile {
     'fontSize': fontSize,
     'cursor': cursor.name,
     'cursorBlink': cursorBlink,
+    'opacity': opacity,
     'boldText': boldText,
     'scrollbackLimited': scrollbackLimited,
     'scrollbackLines': scrollbackLines,
@@ -209,6 +216,9 @@ class TerminalProfile {
           : base.fontSize,
       cursor: pick(CursorStyleChoice.values, json['cursor'], base.cursor),
       cursorBlink: flag('cursorBlink', base.cursorBlink),
+      opacity: json['opacity'] is num
+          ? (json['opacity'] as num).toDouble().clamp(0.3, 1.0)
+          : base.opacity,
       boldText: flag('boldText', base.boldText),
       scrollbackLimited: flag('scrollbackLimited', base.scrollbackLimited),
       scrollbackLines: count(
@@ -389,6 +399,67 @@ const TerminalProfile basicProfile = TerminalProfile(
   name: 'Basic',
 );
 
+/// The profiles Terminal ships, besides Basic (which follows the appearance): own names and
+/// own palettes (`extraProfiles` in style.dart).
+const List<TerminalProfile> builtInProfiles = [
+  TerminalProfile(id: 'slate', name: 'Slate', scheme: 'slate'),
+  TerminalProfile(
+    id: 'frost',
+    name: 'Frost',
+    scheme: 'frost',
+    cursor: CursorStyleChoice.beam,
+    opacity: 0.8,
+  ),
+  TerminalProfile(id: 'smoke', name: 'Smoke', scheme: 'smoke', opacity: 0.74),
+  TerminalProfile(
+    id: 'contrast',
+    name: 'High Contrast',
+    scheme: 'contrast',
+    fontSize: 14,
+    cursorBlink: true,
+  ),
+  TerminalProfile(
+    id: 'phosphor',
+    name: 'Phosphor',
+    scheme: 'phosphor',
+    cursorBlink: true,
+  ),
+  TerminalProfile(
+    id: 'amber',
+    name: 'Amber',
+    scheme: 'amber',
+    cursor: CursorStyleChoice.underline,
+    cursorBlink: true,
+  ),
+  TerminalProfile(
+    id: 'paper',
+    name: 'Paper',
+    scheme: 'paper',
+    fontSize: 14,
+    cursor: CursorStyleChoice.beam,
+  ),
+  TerminalProfile(id: 'lagoon', name: 'Lagoon', scheme: 'lagoon'),
+  TerminalProfile(
+    id: 'dune',
+    name: 'Dune',
+    scheme: 'dune',
+    cursor: CursorStyleChoice.underline,
+  ),
+  TerminalProfile(
+    id: 'manuscript',
+    name: 'Manuscript',
+    scheme: 'manuscript',
+    fontSize: 14,
+    cursor: CursorStyleChoice.beam,
+  ),
+];
+
+/// The profiles of a fresh install: Basic first (the default), then the built-in ones.
+const List<TerminalProfile> startingProfiles = [
+  basicProfile,
+  ...builtInProfiles,
+];
+
 /// The preferences, observable: the profiles, the default one and the general settings.
 class TerminalSettings extends ChangeNotifier {
   TerminalSettings({
@@ -401,7 +472,7 @@ class TerminalSettings extends ChangeNotifier {
   /// How long changes wait before they are written (zero: at the end of this turn).
   final Duration saveDelay;
 
-  List<TerminalProfile> _profiles = const [basicProfile];
+  List<TerminalProfile> _profiles = startingProfiles;
   List<WindowGroup> _groups = const [];
   String _defaultId = 'basic';
 
@@ -460,7 +531,15 @@ class TerminalSettings extends ChangeNotifier {
               when seen.add(profile.id))
             profile,
       ];
-      if (profiles.isNotEmpty) _profiles = profiles;
+      if (profiles.isNotEmpty) {
+        // A file saved before the built-in profiles existed gets them added once.
+        if (json['builtIns'] != 1) {
+          for (final built in builtInProfiles) {
+            if (seen.add(built.id)) profiles.add(built);
+          }
+        }
+        _profiles = profiles;
+      }
     }
     final groups = json['windowGroups'];
     if (groups is List) {
@@ -495,6 +574,7 @@ class TerminalSettings extends ChangeNotifier {
 
   Map<String, Object?> toJson() => {
     'version': 1,
+    'builtIns': 1,
     'defaultProfile': _defaultId,
     'profiles': [for (final p in _profiles) p.toJson()],
     'windowGroups': [for (final g in _groups) g.toJson()],

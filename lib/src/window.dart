@@ -1080,9 +1080,11 @@ class TerminalWindowState extends State<TerminalWindow>
 
   TerminalLook _look(TerminalProfile profile) {
     final base = profileOf(context);
-    final colors = profile.scheme == 'default'
-        ? base.grid
-        : (extraProfiles[profile.scheme] ?? base.grid);
+    final colors =
+        (profile.scheme == 'default'
+                ? base.grid
+                : (extraProfiles[profile.scheme] ?? base.grid))
+            .withOpacity(profile.opacity);
     session.setTheme(
       PtyTheme(
         foreground: colors.foreground.toARGB32() & 0xffffff,

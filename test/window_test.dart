@@ -85,7 +85,7 @@ void main() {
     // The programs can ask for the colours of the profile: the window's, in the light look.
     final theme = pty.spawns.single.theme!;
     expect(theme.background, 0xffffff);
-    expect(theme.ansi[1], 0x990100);
+    expect(theme.ansi[1], ansiLightNormal[1].toARGB32() & 0xffffff);
     // 800 × 600 minus the chrome (68) and the 12 pt padding, in 7.2 × 16 cells.
     expect(cols, ((800 - 24) / 7.2).floor());
     expect(rows, (600 - 68 - 24) ~/ 16);
