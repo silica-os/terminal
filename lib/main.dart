@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
+import 'src/app_info.dart';
 import 'src/grid.dart';
 import 'src/l10n.dart';
 import 'src/pty.dart';
@@ -21,6 +22,8 @@ void main(List<String> args) {
   final shell = env['SHELL'];
   final shellName = command?.first.split('/').last ?? shell?.split('/').last;
   WidgetsFlutterBinding.ensureInitialized();
+  // About Terminal and the standard app menu (silica-ui#99).
+  SilicaApp.info = appInfo;
   // The title band is part of the window: Ossido draws only the window buttons in it.
   SilicaWindow.setFullSizeContent(titleBarHeight).ignore();
   // 80 × 24 cells open a 597 × 421 pt window (terminal.md › Default size); the minimum keeps
