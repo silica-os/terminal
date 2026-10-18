@@ -63,4 +63,34 @@ Two things remain slower than VTE:
 
 The bottleneck found was xterm.dart's design: a Dart-side parser on the UI thread. It is not the toolkit. Moving the whole UI to Rust is not justified by these numbers.
 
-Terminal will move from xterm.dart to the grid engine. Selection, scrollback, search, mouse reporting and the OSC features still have to be carried over; they are tracked as issues. For now the grid engine is behind `SILICA_TERMINAL_ENGINE=grid`.
+The grid engine is now the only engine: Terminal no longer depends on xterm.dart, and the features that were left behind (scrollback viewing, selection, search, mouse reporting, the OSC sequences, the split view) run on it.
+
+## Headless benchmarks of the finished engine
+
+The VM run above measured the whole path. These two benchmarks measure the halves separately, without a display, so that they can be repeated (i9-13900H, 20 threads; the Rust numbers are a release build, the Dart numbers the JIT build `flutter test` uses, so they are upper bounds for the AOT app).
+
+**Engine** (`cargo test --release -p silica-embedder --lib bench_flood -- --ignored --nocapture`, `crates/embedder/src/termgrid.rs`): the real parser thread is fed 64 KB chunks of a flood while the test takes a frame every 16.7 ms and asks the grid something every millisecond, as a key, a click or the wheel would.
+
+| Flood | Size | Parse | Frame (build + encode) p50 / p99 | Frame size | Wait for the grid p50 / p99 / max |
+|---|---|---|---|---|---|
+| `seq 1 10000000` | 89 MB | 127 MB/s | 0.24 / 0.36 ms | 2.1 KB | 0.05 / 0.12 / 0.26 ms |
+| `yes` (5 M lines) | 15 MB | 129 MB/s | 0.17 / 5.6 ms | 0.1 KB | 0.04 / 0.13 / 7.7 ms |
+| `cat` of 100 MB of text | 90 MB | 134 MB/s | 0.29 / 0.35 ms | 6.2 KB | 0.09 / 0.16 / 0.67 ms |
+| colour, an SGR per word | 91 MB | 110 MB/s | 0.34 / 0.55 ms | 8.1 KB | 0.08 / 0.18 / 0.41 ms |
+
+(The 7.7 ms maximum of `yes` is the first frame after the parser started, not a steady stall.) The pty cannot deliver more than the 56 MB/s measured above, so the parser has about twice the headroom.
+
+**Painter and view** (`test/perf_test.dart`): a 60 × 200 grid in which every row is new in every frame, the worst case of a flood; `jsonDecode` of the message, `GridState.apply`, and layout plus paint of the rows.
+
+| Step | p50 | p99 |
+|---|---|---|
+| Decode the frame | 0.05 ms | |
+| Build the rows | 0.01 ms | |
+| Lay out and paint 60 rows | 2.0 ms | 5.2 ms |
+| UI thread per frame, all of it | 2.1 ms | 7.5 ms (max 10 ms) |
+| A whole frame through the widget (61 × 205) | 2.2 ms | 3.0 ms |
+| A key pressed between flooded frames, to the pty | 0.39 ms | 1.05 ms |
+
+All 120 keys sent during the flood reached the pty. The frame budget is 16.7 ms: the UI thread is busy about 13% of it in the worst case, a key waits at most for the frame being built (about 10 ms in the JIT build), and the embedder's grid answers calls in under 0.2 ms at the 99th percentile during a flood.
+
+**Verdict**: the Flutter front end keeps up with `yes`, `cat` of a large file and `seq 1e7` without dropping input or freezing; the limit is the pty, not the engine and not the painter. Moving the front end to Rust is not needed. What is left unmeasured here is the GPU side of painting a frame, which the VM numbers above cover (frame p99 38 ms during `cat`, steady 60 Hz on short lines).
