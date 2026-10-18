@@ -73,7 +73,18 @@ abstract class PtyBackend {
   /// Moves the view of a grid session: `lines` towards older text (negative: newer), `page`
   /// (±1), or `to`: `top`, `bottom`, `previousPrompt`, `nextPrompt`, `row` (with [row], counted
   /// from the top of the buffer; centred if out of view).
-  Future<void> scroll(int id, {int? lines, int? page, String? to, int? row});
+  Future<void> scroll(
+    int id, {
+    int? lines,
+    int? page,
+    String? to,
+    int? row,
+    int view = 0,
+  });
+
+  /// Opens the second view of a split with [rows] rows (or resizes it), or closes it
+  /// (`close`, no rows). Its frames come as [PtyGrid] with `view: 1`.
+  Future<void> split(int id, {required String op, int? rows});
 
   /// A selection operation: [op] `start` (with [kind] `simple`, `semantic`, `lines` or `block`),
   /// `update`, `clear`, `all` or `marks`; [x], [y] are visible cells, [right] the right half
@@ -85,6 +96,7 @@ abstract class PtyBackend {
     int x = 0,
     int y = 0,
     bool right = false,
+    int view = 0,
   });
 
   /// The selected text, soft wraps joined; null without a selection.
@@ -256,14 +268,25 @@ class SilicaPty implements PtyBackend {
   });
 
   @override
-  Future<void> scroll(int id, {int? lines, int? page, String? to, int? row}) =>
-      _invoke('scroll', {
-        'id': id,
-        'lines': ?lines,
-        'page': ?page,
-        'to': ?to,
-        'row': ?row,
-      });
+  Future<void> scroll(
+    int id, {
+    int? lines,
+    int? page,
+    String? to,
+    int? row,
+    int view = 0,
+  }) => _invoke('scroll', {
+    'id': id,
+    'lines': ?lines,
+    'page': ?page,
+    'to': ?to,
+    'row': ?row,
+    if (view != 0) 'view': view,
+  });
+
+  @override
+  Future<void> split(int id, {required String op, int? rows}) =>
+      _invoke('split', {'id': id, 'op': op, 'rows': ?rows});
 
   @override
   Future<bool> select(
@@ -273,6 +296,7 @@ class SilicaPty implements PtyBackend {
     int x = 0,
     int y = 0,
     bool right = false,
+    int view = 0,
   }) async =>
       await _invoke('select', {
         'id': id,
@@ -281,6 +305,7 @@ class SilicaPty implements PtyBackend {
         'x': x,
         'y': y,
         if (right) 'right': true,
+        if (view != 0) 'view': view,
       }) !=
       false;
 
@@ -484,11 +509,16 @@ class FakePty implements PtyBackend {
     int? page,
     String? to,
     int? row,
+    int view = 0,
   }) async => calls.add((
     'scroll',
     id,
-    {'lines': lines, 'page': page, 'to': to, 'row': row},
+    {'lines': lines, 'page': page, 'to': to, 'row': row, 'view': view},
   ));
+
+  @override
+  Future<void> split(int id, {required String op, int? rows}) async =>
+      calls.add(('split', id, {'op': op, 'rows': rows}));
 
   @override
   Future<bool> select(
@@ -498,11 +528,12 @@ class FakePty implements PtyBackend {
     int x = 0,
     int y = 0,
     bool right = false,
+    int view = 0,
   }) async {
     calls.add((
       'select',
       id,
-      {'op': op, 'kind': kind, 'x': x, 'y': y, 'right': right},
+      {'op': op, 'kind': kind, 'x': x, 'y': y, 'right': right, 'view': view},
     ));
     return true;
   }

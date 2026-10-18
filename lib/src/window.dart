@@ -74,6 +74,11 @@ class _Tab {
   /// A bell rang while the tab was in the background.
   bool belled = false;
 
+  /// The tab shows two views of its session (View › Split Pane).
+  bool split = false;
+  final GridDecor splitDecor = GridDecor();
+  final FocusNode splitFocus = FocusNode(debugLabel: 'split');
+
   /// The tab title set by the user (Edit Title); null: the program's.
   String? customTitle;
   VoidCallback? bellListener;
@@ -81,6 +86,8 @@ class _Tab {
   void dispose() {
     decor.dispose();
     focus.dispose();
+    splitDecor.dispose();
+    splitFocus.dispose();
   }
 }
 
@@ -312,6 +319,8 @@ class TerminalWindowState extends State<TerminalWindow>
   }
 
   void _insert(TerminalSession session, {required bool animate}) {
+    // A tab that arrives from another window shows one view: its split starts again.
+    if (session.split != null) session.closeSplit();
     final tab = _Tab(session);
     tab.bellListener = () => _belled(tab);
     session.grid.bells.addListener(tab.bellListener!);
@@ -757,6 +766,24 @@ class TerminalWindowState extends State<TerminalWindow>
     }
   }
 
+  /// View › Split Pane: two views of the session, the lower one the live screen, the upper
+  /// one a scrollback to look at while the shell works. The window grows to keep the rows.
+  void splitPane() {
+    if (_tabs.isEmpty || _tab.split) return;
+    _growBy(splitGrow);
+    session.beginSplit();
+    setState(() => _tab.split = true);
+  }
+
+  /// View › Close Split Pane.
+  void closeSplitPane() {
+    if (_tabs.isEmpty || !_tab.split) return;
+    _growBy(-splitGrow);
+    session.closeSplit();
+    setState(() => _tab.split = false);
+    _tab.focus.requestFocus();
+  }
+
   /// Moves the current tab to a window of its own.
   Future<void> moveTabToNewWindow() async {
     if (_tabs.length < 2) return;
@@ -1031,25 +1058,7 @@ class TerminalWindowState extends State<TerminalWindow>
               _titleBand(colors),
               if (_showTabBar) _tabBar(colors),
               if (_finding) _findBar(colors, profileOf(context)),
-              Expanded(
-                child: TerminalView(
-                  key: ObjectKey(tab.session),
-                  session: tab.session,
-                  look: _look(profile),
-                  focusNode: tab.focus,
-                  decor: tab.decor
-                    ..update(
-                      showMarks: profile.showMarks && _settings.autoMarkPrompts,
-                    ),
-                  padding: gridPadding,
-                  optionAsMeta: profile.optionAsMeta,
-                  mouseReporting: _settings.mouseReporting,
-                  openLinks: _settings.openLinks,
-                  onKeyEvent: _logoKey,
-                  onOpenLink: _openLink,
-                  onContextMenu: _contextMenu,
-                ),
-              ),
+              Expanded(child: _panes(tab, profile, colors)),
             ],
           ),
         ),
@@ -1087,6 +1096,82 @@ class TerminalWindowState extends State<TerminalWindow>
             ),
     );
   }
+
+  Widget _view(_Tab tab, TerminalProfile profile, {required int view}) =>
+      TerminalView(
+        key: ValueKey(view == 1 ? 'split view' : 'view'),
+        session: tab.session,
+        look: _look(profile),
+        focusNode: view == 1 ? tab.splitFocus : tab.focus,
+        decor: (view == 1 ? tab.splitDecor : tab.decor)
+          ..update(
+            showMarks: profile.showMarks && _settings.autoMarkPrompts,
+            active: _windowActive,
+          ),
+        view: view,
+        autofocus: view == 0,
+        padding: gridPadding,
+        optionAsMeta: profile.optionAsMeta,
+        mouseReporting: _settings.mouseReporting,
+        openLinks: _settings.openLinks,
+        onKeyEvent: _logoKey,
+        onOpenLink: _openLink,
+        onContextMenu: _contextMenu,
+      );
+
+  /// The grid, or two views of the session divided by the splitter.
+  Widget _panes(_Tab tab, TerminalProfile profile, AmalfiColors colors) {
+    if (!tab.split) {
+      return KeyedSubtree(
+        key: ObjectKey(tab.session),
+        child: _view(tab, profile, view: 0),
+      );
+    }
+    return KeyedSubtree(
+      key: ObjectKey(tab.session),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _view(tab, profile, view: 1)),
+          _splitter(colors),
+          Expanded(child: _view(tab, profile, view: 0)),
+        ],
+      ),
+    );
+  }
+
+  Widget _splitter(AmalfiColors colors) => SizedBox(
+    key: const ValueKey('splitter'),
+    height: splitterHeight,
+    child: Stack(
+      children: [
+        Positioned.fill(child: ColoredBox(color: colors.surfaceSunken)),
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 1,
+          child: ColoredBox(color: colors.lineSeparator),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 1,
+          child: ColoredBox(color: colors.lineSeparator),
+        ),
+        Center(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.textTertiary,
+              borderRadius: BorderRadius.circular(splitterDot / 2),
+            ),
+            child: const SizedBox.square(dimension: splitterDot),
+          ),
+        ),
+      ],
+    ),
+  );
 
   /// ⌘ belongs to the app, never to the program: the grid takes the key first, so the menu
   /// bar's shortcuts are run here (the bar binds them for the rest of the window). Also the
@@ -1544,6 +1629,20 @@ class TerminalWindowState extends State<TerminalWindow>
               checked: _settings.mouseReporting,
               onSelected: () =>
                   _settings.set(mouseReporting: !_settings.mouseReporting),
+            ),
+          ]),
+          group([
+            SilicaMenuItem(
+              label: l.splitPane,
+              shortcut: cmd(LogicalKeyboardKey.keyD),
+              enabled: !empty && !_tab.split,
+              onSelected: splitPane,
+            ),
+            SilicaMenuItem(
+              label: l.closeSplitPane,
+              shortcut: cmd(LogicalKeyboardKey.keyD, shift: true),
+              enabled: !empty && _tab.split,
+              onSelected: closeSplitPane,
             ),
           ]),
           group([

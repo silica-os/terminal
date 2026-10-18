@@ -54,6 +54,13 @@ const double findSegmentsWidth = 56;
 const double findDoneWidth = 56;
 const double findRight = 4;
 
+/// The splitter between the two halves of a split view (kit `Apps/Terminal/Split`): 8 pt of
+/// `Surface/Sunken` between two 1 pt separators, with a 4 pt dot of `Text/Tertiary` in the
+/// middle. The window grows by as much as a half needs for the rows to stay: 8 + 2 × 12 pt.
+const double splitterHeight = 8;
+const double splitterDot = 4;
+const double splitGrow = 32;
+
 /// A cell is 7.2 × 16 pt: JetBrains Mono 12 / 16 (`components.md`, Mono token); the bundled
 /// JetBrains Mono NL advances 0.6 em.
 const Size cellSize = Size(7.2, 16);

@@ -633,6 +633,130 @@ void main() {
     });
   });
 
+  group('the other half of a split', () {
+    Future<void> pumpSplit(WidgetTester tester) async {
+      useLocale(const Locale('en'));
+      pty = FakePty();
+      session = TerminalSession(pty: pty, shellName: 'bash');
+      focus = FocusNode();
+      final splitFocus = FocusNode();
+      decor = GridDecor();
+      addTearDown(session.dispose);
+      addTearDown(focus.dispose);
+      addTearDown(splitFocus.dispose);
+      await session.attach(10, 52);
+      session.beginSplit();
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: AmalfiTheme(
+            app: 'Terminal',
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 400,
+                height: 150,
+                child: TerminalView(
+                  session: session,
+                  look: look,
+                  focusNode: splitFocus,
+                  decor: GridDecor(),
+                  view: 1,
+                  autofocus: false,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      'opens the split with its rows and shows the frames of view 1',
+      (tester) async {
+        await pumpSplit(tester);
+        // (150 − 24) / 16 = 7 rows.
+        final open = calls('split').single.$3! as Map;
+        expect((open['op'], open['rows']), ('open', 7));
+        pty.grid(1, {
+          'view': 1,
+          'cols': 52,
+          'rows': 7,
+          'full': true,
+          'lines': [
+            {
+              'y': 0,
+              'runs': [
+                ['older', -1, -1, 0, 5],
+              ],
+            },
+          ],
+          'scroll': {'offset': 0, 'history': 40},
+        });
+        pty.show(1, ['live']);
+        await tester.pump();
+        expect(session.split!.text, startsWith('older'));
+        expect(session.grid.text, startsWith('live'));
+        expect(session.split!.history, 40);
+      },
+    );
+
+    testWidgets('selecting and scrolling name the view', (tester) async {
+      await pumpSplit(tester);
+      pty.grid(1, {
+        'view': 1,
+        'cols': 52,
+        'rows': 7,
+        'full': true,
+        'lines': <Object>[],
+        'scroll': {'offset': 0, 'history': 40},
+      });
+      await tester.pump();
+      final g = await mouse(tester, cell(tester, 2, 1));
+      await g.down(cell(tester, 2, 1));
+      expect(lastSelect(), containsPair('view', 1));
+      await g.moveTo(cell(tester, 4, 1));
+      expect(lastSelect(), containsPair('view', 1));
+      await g.up();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.pageUp);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      expect(calls('scroll').last.$3, containsPair('view', 1));
+      // The scroller of the half moves the half.
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position;
+      expect(position.maxScrollExtent, 40 * 16);
+      position.jumpTo(40 * 16 - 5 * 16);
+      await tester.pump();
+      expect(calls('scroll').last.$3, containsPair('view', 1));
+      expect((calls('scroll').last.$3! as Map)['lines'], 5);
+    });
+
+    testWidgets('the program is never sent mouse reports from it', (
+      tester,
+    ) async {
+      await pumpSplit(tester);
+      pty.show(1, ['x'], modes: 4 | 8);
+      pty.grid(1, {
+        'view': 1,
+        'modes': 4 | 8,
+        'cols': 52,
+        'rows': 7,
+        'full': true,
+        'lines': <Object>[],
+      });
+      await tester.pump();
+      final g = await mouse(tester, cell(tester, 2, 1));
+      await g.down(cell(tester, 2, 1));
+      await g.up();
+      expect(sent(), isEmpty);
+      expect(calls('select'), isNotEmpty);
+    });
+  });
+
   testWidgets('the bell flashes the view for 150 ms', (tester) async {
     await pumpView(tester);
     pty.grid(1, {'bell': true});

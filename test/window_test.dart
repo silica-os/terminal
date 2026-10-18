@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -533,6 +535,79 @@ void main() {
     );
     expect(r('find done').left, 580);
     expect(r('find done').height, 24);
+  });
+
+  testWidgets('the split: two views of the session on the kit\'s measures', (
+    tester,
+  ) async {
+    final sizes = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('silica/window', JSONMethodCodec()),
+      (call) async {
+        if (call.method == 'setSize') sizes.add(call.arguments);
+        return true;
+      },
+    );
+    tester.view.physicalSize = const Size(640, 476);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final pty = FakePty();
+    final app = TerminalApp(pty: pty, shellName: 'bash');
+    addTearDown(app.settings.dispose);
+    await tester.pumpWidget(
+      AppLocalizationsScope(
+        locale: const Locale('en'),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AmalfiTheme(
+            app: 'Terminal',
+            child: TerminalWindow(app: app),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    final window = tester.state<TerminalWindowState>(
+      find.byType(TerminalWindow),
+    );
+    expect(find.byKey(const ValueKey('splitter')), findsNothing);
+    expect(pty.sizes[1], (24, 85));
+    window.splitPane();
+    await tester.pump();
+    // The window grows by 32 pt (8 for the splitter and 12 + 12 for the second half).
+    expect(sizes.single.toString(), contains('508'));
+    tester.view.physicalSize = const Size(640, 508);
+    await tester.pump();
+    await tester.pump();
+    Rect r(String key) => tester.getRect(find.byKey(ValueKey(key)));
+    // `Apps/Terminal/Split`: the splitter at y 284, 8 pt tall; 12 rows in each half.
+    expect(r('splitter'), const Rect.fromLTWH(0, 284, 640, 8));
+    expect(r('split view'), const Rect.fromLTWH(0, 68, 640, 216));
+    expect(r('view'), const Rect.fromLTWH(0, 292, 640, 216));
+    expect(pty.sizes[1]!.$1, 12, reason: 'the live half is the pty\'s size');
+    // It opened with the rows the old window gave it and resized when the window grew.
+    final splits = [
+      for (final c in pty.calls.where((c) => c.$1 == 'split')) c.$3! as Map,
+    ];
+    expect(splits.map((m) => m['op']), ['open', 'resize']);
+    expect(splits.last['rows'], 12);
+    // Typing goes to the process from either half.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA, character: 'a');
+    expect(utf8.decode(pty.written[1]!), 'a');
+    // The split is not twice a command: the item is off while it is open.
+    expect(window.session.split, isNotNull);
+    window.closeSplitPane();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('splitter')), findsNothing);
+    expect(window.session.split, isNull);
+    expect(
+      (pty.calls.where((c) => c.$1 == 'split').last.$3! as Map)['op'],
+      'close',
+    );
+    expect(sizes, hasLength(2));
+    expect(sizes.last.toString(), contains('476'));
+    await tester.pump(const Duration(seconds: 1));
   });
 
   test('the selected tab keeps 120 pt while the others shrink', () {

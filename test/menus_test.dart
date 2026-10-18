@@ -598,6 +598,30 @@ void main() {
     expect(state.fontSize, 8);
   });
 
+  testWidgets('View: Split Pane and Close Split Pane take turns', (
+    tester,
+  ) async {
+    final state = await pump(tester);
+    expect(item('View', 'Split Pane')['shortcut'], {'key': 'D', 'meta': true});
+    expect(item('View', 'Close Split Pane')['shortcut'], {
+      'key': 'D',
+      'meta': true,
+      'shift': true,
+    });
+    expect(enabled(item('View', 'Split Pane')), isTrue);
+    expect(enabled(item('View', 'Close Split Pane')), isFalse);
+    choose(item('View', 'Split Pane'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('splitter')), findsOneWidget);
+    expect(enabled(item('View', 'Split Pane')), isFalse);
+    expect(enabled(item('View', 'Close Split Pane')), isTrue);
+    choose(item('View', 'Close Split Pane'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('splitter')), findsNothing);
+    expect(state.session.split, isNull);
+  });
+
   testWidgets('View: mouse reporting, tab bar and marks toggle', (
     tester,
   ) async {

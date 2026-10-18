@@ -81,10 +81,15 @@ class TerminalView extends StatefulWidget {
     this.mouseReporting = true,
     this.openLinks = true,
     this.autofocus = true,
+    this.view = 0,
     this.onKeyEvent,
     this.onOpenLink,
     this.onContextMenu,
   });
+
+  /// 0: the screen of the session (it gives the terminal its size); 1: the other half of a
+  /// split, which scrolls on its own and is never reported to programs.
+  final int view;
 
   final TerminalSession session;
   final TerminalLook look;
@@ -123,7 +128,10 @@ class TerminalViewState extends State<TerminalView> {
   Timer? _blink;
   Timer? _autoScroll;
 
-  GridState get _grid => widget.session.grid;
+  late GridState _grid = _resolveGrid();
+
+  GridState _resolveGrid() =>
+      widget.view == 1 ? widget.session.beginSplit() : widget.session.grid;
   TerminalLook get _look => widget.look;
 
   @override
@@ -141,8 +149,9 @@ class TerminalViewState extends State<TerminalView> {
   void didUpdateWidget(TerminalView old) {
     super.didUpdateWidget(old);
     if (old.session != widget.session) {
-      old.session.grid.removeListener(_gridChanged);
-      old.session.grid.bells.removeListener(_bell);
+      _grid.removeListener(_gridChanged);
+      _grid.bells.removeListener(_bell);
+      _grid = _resolveGrid();
       _grid.addListener(_gridChanged);
       _grid.bells.addListener(_bell);
       _bellSeen = _grid.bells.value;
@@ -187,7 +196,12 @@ class TerminalViewState extends State<TerminalView> {
     final height = (rows * _look.cellHeight).round();
     // Not during layout: the session may notify its listeners.
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted && widget.session == session && _size == (rows, cols)) {
+      if (!mounted || widget.session != session || _size != (rows, cols)) {
+        return;
+      }
+      if (widget.view == 1) {
+        session.openSplit(rows);
+      } else {
         session
             .attach(rows, cols, pixelWidth: width, pixelHeight: height)
             .ignore();
@@ -240,7 +254,9 @@ class TerminalViewState extends State<TerminalView> {
     if (_syncing || !_scroll.hasClients) return;
     final lines = _scroll.position.pixels / _look.cellHeight;
     final offset = (_grid.history - lines.round()).clamp(0, _grid.history);
-    if (offset != _grid.offset) widget.session.scrollToOffset(offset);
+    if (offset != _grid.offset) {
+      widget.session.scrollToOffset(offset, view: widget.view);
+    }
   }
 
   // ---- focus, blink, bell -----------------------------------------------------------
@@ -248,6 +264,8 @@ class TerminalViewState extends State<TerminalView> {
   bool _hadFocus = false;
 
   void _focusChanged() {
+    // The program hears of the keyboard going and coming once, from the screen's view.
+    if (widget.view != 0) return;
     final focused = widget.focusNode.hasFocus;
     if (focused == _hadFocus) return;
     _hadFocus = focused;
@@ -307,19 +325,19 @@ class TerminalViewState extends State<TerminalView> {
         !keyboard.isMetaPressed &&
         !modes.altScreen) {
       if (key == LogicalKeyboardKey.pageUp) {
-        widget.session.scrollPage(1);
+        widget.session.scrollPage(1, view: widget.view);
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.pageDown) {
-        widget.session.scrollPage(-1);
+        widget.session.scrollPage(-1, view: widget.view);
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.home) {
-        widget.session.scrollTo('top');
+        widget.session.scrollTo('top', view: widget.view);
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.end) {
-        widget.session.scrollTo('bottom');
+        widget.session.scrollTo('bottom', view: widget.view);
         return KeyEventResult.handled;
       }
     }
@@ -333,7 +351,8 @@ class TerminalViewState extends State<TerminalView> {
       optionAsMeta: widget.optionAsMeta,
     );
     if (bytes == null) return KeyEventResult.ignored;
-    if (_grid.offset > 0) widget.session.scrollTo('bottom');
+    // Typing takes the screen to the bottom; the other half of a split stays where it is.
+    if (widget.session.grid.offset > 0) widget.session.scrollTo('bottom');
     widget.decor.update(cursorOn: true);
     widget.session.write(bytes);
     return KeyEventResult.handled;
@@ -352,7 +371,8 @@ class TerminalViewState extends State<TerminalView> {
     return (x, y, right);
   }
 
-  bool get _reporting => _grid.modes.mouse && widget.mouseReporting;
+  bool get _reporting =>
+      widget.view == 0 && _grid.modes.mouse && widget.mouseReporting;
 
   bool _shift() => HardwareKeyboard.instance.isShiftPressed;
   bool _alt() => HardwareKeyboard.instance.isAltPressed;
@@ -436,7 +456,9 @@ class TerminalViewState extends State<TerminalView> {
     _dragged = false;
     if (_shift() && _grid.selection.isNotEmpty && _clicks == 1) {
       // Shift+click extends the selection.
-      widget.session.select('update', x: x, y: y, right: right).ignore();
+      widget.session
+          .select('update', x: x, y: y, right: right, view: widget.view)
+          .ignore();
       _lastSelected = (x, y, right);
       return;
     }
@@ -445,9 +467,18 @@ class TerminalViewState extends State<TerminalView> {
       3 => 'lines',
       _ => _alt() ? 'block' : 'simple',
     };
-    widget.session.selectionRow = widget.session.topRow + y;
+    widget.session.selectionRow = widget.view == 1
+        ? widget.session.splitTopRow + y
+        : widget.session.topRow + y;
     widget.session
-        .select('start', kind: kind, x: x, y: y, right: right)
+        .select(
+          'start',
+          kind: kind,
+          x: x,
+          y: y,
+          right: right,
+          view: widget.view,
+        )
         .ignore();
     _lastSelected = (x, y, right);
   }
@@ -467,7 +498,9 @@ class TerminalViewState extends State<TerminalView> {
     _dragged = true;
     if (_lastSelected != (x, y, right)) {
       _lastSelected = (x, y, right);
-      widget.session.select('update', x: x, y: y, right: right).ignore();
+      widget.session
+          .select('update', x: x, y: y, right: right, view: widget.view)
+          .ignore();
     }
     _autoScrollFor(event.localPosition);
   }
@@ -490,8 +523,10 @@ class TerminalViewState extends State<TerminalView> {
       final local = _lastLocal;
       if (local == null || !_selecting) return;
       final (x, y, right) = _cellAt(local);
-      widget.session.scrollLines(by.clamp(-10, 10));
-      widget.session.select('update', x: x, y: y, right: right).ignore();
+      widget.session.scrollLines(by.clamp(-10, 10), view: widget.view);
+      widget.session
+          .select('update', x: x, y: y, right: right, view: widget.view)
+          .ignore();
     });
   }
 
@@ -510,7 +545,7 @@ class TerminalViewState extends State<TerminalView> {
     if (!_dragged && _clicks == 1) {
       // A click without a drag only moves the focus: it leaves no selection.
       widget.session.selectionRow = null;
-      widget.session.select('clear').ignore();
+      widget.session.select('clear', view: widget.view).ignore();
       return;
     }
     // The finished selection becomes the primary one, pasted by the middle button.

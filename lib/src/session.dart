@@ -101,6 +101,10 @@ class TerminalSession extends ChangeNotifier {
 
   final GridState grid = GridState();
 
+  /// The other half of a split (view 1 of the embedder's grid), while there is one.
+  GridState? get split => _split;
+  GridState? _split;
+
   int? _id;
   StreamSubscription<PtyEvent>? _events;
   bool _starting = false;
@@ -218,7 +222,11 @@ class TerminalSession extends ChangeNotifier {
     if (event.id != _id) return;
     switch (event) {
       case PtyGrid(:final frame):
-        grid.apply(frame);
+        if (frame['view'] == 1) {
+          _split?.apply(frame);
+        } else {
+          grid.apply(frame);
+        }
       case PtyExit(:final code, :final signal):
         _ended = true;
         _exit = SessionExit(code: code, signal: signal);
@@ -317,21 +325,57 @@ class TerminalSession extends ChangeNotifier {
 
   // ---- the view ---------------------------------------------------------------------
 
-  void scrollLines(int lines) => _scroll(lines: lines);
-  void scrollPage(int page) => _scroll(page: page);
-  void scrollTo(String to) => _scroll(to: to);
-  void scrollToRow(int row) => _scroll(to: 'row', row: row);
+  // The scrolling methods act on view 0, the screen, or on view 1, the other half of a split.
+  void scrollLines(int lines, {int view = 0}) =>
+      _scroll(lines: lines, view: view);
+  void scrollPage(int page, {int view = 0}) => _scroll(page: page, view: view);
+  void scrollTo(String to, {int view = 0}) => _scroll(to: to, view: view);
+  void scrollToRow(int row, {int view = 0}) =>
+      _scroll(to: 'row', row: row, view: view);
 
   /// Scrolls to show [offset] lines back from the bottom.
-  void scrollToOffset(int offset) {
-    final delta = offset - grid.offset;
-    if (delta != 0) _scroll(lines: delta);
+  void scrollToOffset(int offset, {int view = 0}) {
+    final state = view == 1 ? _split : grid;
+    if (state == null) return;
+    final delta = offset - state.offset;
+    if (delta != 0) _scroll(lines: delta, view: view);
   }
 
-  void _scroll({int? lines, int? page, String? to, int? row}) {
+  void _scroll({int? lines, int? page, String? to, int? row, int view = 0}) {
     final id = _id;
-    if (id == null || _ended && grid.history == 0) return;
-    pty.scroll(id, lines: lines, page: page, to: to, row: row).ignore();
+    final state = view == 1 ? _split : grid;
+    if (id == null || state == null || _ended && state.history == 0) return;
+    pty
+        .scroll(id, lines: lines, page: page, to: to, row: row, view: view)
+        .ignore();
+  }
+
+  bool _splitOpened = false;
+
+  /// Makes the state of the other half of a split, so that its view can listen to it; the
+  /// embedder hears of it when the view knows its size ([openSplit]).
+  GridState beginSplit() => _split ??= GridState();
+
+  /// Opens the other half of a split with [rows] rows, or resizes it.
+  void openSplit(int rows) {
+    final id = _id;
+    if (id == null) return;
+    final state = beginSplit();
+    if (_splitOpened && state.rows == rows) return;
+    final fresh = !_splitOpened;
+    _splitOpened = true;
+    state.resizeTo(rows, grid.cols);
+    pty.split(id, op: fresh ? 'open' : 'resize', rows: rows).ignore();
+  }
+
+  /// Closes the other half of the split.
+  void closeSplit() {
+    final id = _id;
+    final opened = _splitOpened;
+    _split = null;
+    _splitOpened = false;
+    if (id != null && opened) pty.split(id, op: 'close').ignore();
+    notifyListeners();
   }
 
   Future<bool> select(
@@ -340,12 +384,13 @@ class TerminalSession extends ChangeNotifier {
     int x = 0,
     int y = 0,
     bool right = false,
+    int view = 0,
   }) async {
     final id = _id;
     if (id == null) return false;
     if (op == 'all') selectionRow = 0;
     if (op == 'clear') selectionRow = null;
-    return pty.select(id, op, kind: kind, x: x, y: y, right: right);
+    return pty.select(id, op, kind: kind, x: x, y: y, right: right, view: view);
   }
 
   /// The selected text, with soft wraps joined; null without a selection.
@@ -378,6 +423,12 @@ class TerminalSession extends ChangeNotifier {
 
   /// The top of the view as a row counted from the top of the buffer.
   int get topRow => grid.history - grid.offset;
+
+  /// The same for the other half of the split.
+  int get splitTopRow {
+    final state = _split;
+    return state == null ? 0 : state.history - state.offset;
+  }
 
   Future<bool> mark({bool add = true}) async {
     final id = _id;
@@ -417,6 +468,7 @@ class TerminalSession extends ChangeNotifier {
     final id = _id;
     if (id != null && !_ended) pty.close(id).ignore();
     grid.dispose();
+    _split?.dispose();
     super.dispose();
   }
 }
