@@ -203,13 +203,56 @@ class TerminalWindowState extends State<TerminalWindow>
         adopt(s);
       }
     } else {
+      final group = _launchGroup();
+      final head = group?.windows.first.tabs.first;
       _openTab(
-        profile: widget.seed.profile,
-        command: widget.seed.command,
-        cwd: widget.seed.cwd ?? _app.cwd,
+        profile: head != null
+            ? _settings.profileById(head.profile)
+            : widget.seed.profile,
+        command:
+            head?.command ??
+            widget.seed.command ??
+            _app.command ??
+            _settings.shellForNewWindows,
+        cwd: head?.cwd ?? widget.seed.cwd ?? _app.cwd,
         animate: false,
       );
+      if (group != null) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_openLaunchGroup(group));
+        });
+      }
     }
+  }
+
+  /// The window group the settings ask the first launch to open, if it exists and has a tab.
+  WindowGroup? _launchGroup() {
+    if (_app.launched || widget.seed.profile != null) return null;
+    _app.launched = true;
+    final name = _settings.launchGroup;
+    if (name == null) return null;
+    for (final g in _settings.windowGroups) {
+      if (g.name == name &&
+          g.windows.isNotEmpty &&
+          g.windows.first.tabs.isNotEmpty) {
+        return g;
+      }
+    }
+    return null;
+  }
+
+  /// The rest of the launch group: this window already runs the first tab of its first window.
+  Future<void> _openLaunchGroup(WindowGroup group) async {
+    for (final t in group.windows.first.tabs.skip(1)) {
+      if (!mounted) return;
+      await newTab(
+        profile: _settings.profileById(t.profile),
+        command: t.command,
+        cwd: t.cwd,
+      );
+    }
+    final rest = WindowGroup(group.name, group.windows.skip(1).toList());
+    if (rest.windows.isNotEmpty && mounted) await openWindowGroup(rest);
   }
 
   @override
@@ -779,7 +822,7 @@ class TerminalWindowState extends State<TerminalWindow>
     final opened = await _app.openWindow(
       WindowSeed(
         profile: profile ?? _settings.defaultProfile,
-        command: command ?? _app.command,
+        command: command ?? _app.command ?? _settings.shellForNewWindows,
         cwd: directory,
       ),
     );
@@ -1078,13 +1121,24 @@ class TerminalWindowState extends State<TerminalWindow>
 
   // ---- build ------------------------------------------------------------------------
 
+  static Color? _own(int? argb) => argb == null ? null : Color(argb);
+
   TerminalLook _look(TerminalProfile profile) {
     final base = profileOf(context);
     final colors =
         (profile.scheme == 'default'
                 ? base.grid
                 : (extraProfiles[profile.scheme] ?? base.grid))
-            .withOpacity(profile.opacity);
+            .copyWith(
+              opacity: profile.opacity.clamp(0.3, 1.0),
+              ansiColors: profile.ansiColors,
+              brightBold: profile.brightBold,
+              background: _own(profile.backgroundColor),
+              foreground: _own(profile.textColor),
+              bold: _own(profile.boldColor),
+              selection: _own(profile.selectionColor),
+              cursor: _own(profile.cursorColor),
+            );
     session.setTheme(
       PtyTheme(
         foreground: colors.foreground.toARGB32() & 0xffffff,
@@ -1292,6 +1346,7 @@ class TerminalWindowState extends State<TerminalWindow>
     if (event is KeyDownEvent) {
       final digit = _digit(event.logicalKey);
       if (digit != null &&
+          _settings.tabSwitching &&
           !keyboard.isShiftPressed &&
           !keyboard.isAltPressed &&
           !keyboard.isControlPressed) {

@@ -24,6 +24,7 @@ void main() {
     WidgetTester tester, {
     TerminalProfile? profile,
     bool windows = false,
+    void Function(TerminalSettings settings)? setup,
   }) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1;
@@ -48,6 +49,7 @@ void main() {
     );
     addTearDown(app.settings.dispose);
     if (profile != null) app.settings.updateProfile(profile);
+    setup?.call(app.settings);
     await tester.pumpWidget(
       AppLocalizationsScope(
         locale: const Locale('en'),
@@ -232,6 +234,75 @@ void main() {
     await window.newWindow();
     expect(opened.last.cwd, '/home/me/src');
     expect(opened.last.profile, app.settings.defaultProfile);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('new windows run the shell of the settings', (tester) async {
+    final window = await pump(tester, windows: true);
+    await window.newWindow();
+    expect(opened.last.command, isNull);
+    app.settings.set(shellCommand: '/bin/zsh -l');
+    await window.newWindow();
+    expect(opened.last.command, ['/bin/zsh', '-l']);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('the first window starts in the shell of the settings', (
+    tester,
+  ) async {
+    await pump(tester, setup: (s) => s.set(shellCommand: '/bin/zsh -l'));
+    expect(pty.spawns.single.command, ['/bin/zsh', '-l']);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a launch group opens its tabs and windows', (tester) async {
+    await pump(
+      tester,
+      windows: true,
+      setup: (s) {
+        s.saveWindowGroup(
+          const WindowGroup('work', [
+            WindowGroupWindow([
+              WindowGroupTab(profile: 'basic', cwd: '/a'),
+              WindowGroupTab(profile: 'basic', cwd: '/b'),
+            ]),
+            WindowGroupWindow([WindowGroupTab(profile: 'basic', cwd: '/c')]),
+          ]),
+        );
+        s.set(launchGroup: 'work');
+      },
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    expect([for (final sp in pty.spawns) sp.cwd], ['/a', '/b']);
+    expect(opened.single.cwd, '/c');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a missing launch group opens the usual window', (tester) async {
+    await pump(tester, setup: (s) => s.set(launchGroup: 'gone'));
+    expect(pty.spawns, hasLength(1));
+    expect(opened, isEmpty);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('⌘1…⌘9 select tabs unless the setting is off', (tester) async {
+    final window = await pump(tester);
+    await window.newTab();
+    await tester.pump();
+    expect(window.current, 1);
+    Future<void> cmd1() async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+    }
+
+    app.settings.set(tabSwitching: false);
+    await cmd1();
+    expect(window.current, 1);
+    app.settings.set(tabSwitching: true);
+    await cmd1();
+    expect(window.current, 0);
     await tester.pump(const Duration(seconds: 1));
   });
 

@@ -1381,6 +1381,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show Marks'**
   String get showMarks;
+
+  /// Settings: row choosing what a launch opens.
+  ///
+  /// In en, this message translates to:
+  /// **'On launch, open'**
+  String get settingsOnLaunch;
+
+  /// Settings: launch opens a new window.
+  ///
+  /// In en, this message translates to:
+  /// **'A new window'**
+  String get settingsLaunchNewWindow;
+
+  /// Settings: launch opens this saved window group.
+  ///
+  /// In en, this message translates to:
+  /// **'Window group “{name}”'**
+  String settingsLaunchGroup(String name);
+
+  /// Settings: row choosing the program of new windows.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell for new windows'**
+  String get settingsShellNewWindows;
+
+  /// Settings: the login shell runs in new windows.
+  ///
+  /// In en, this message translates to:
+  /// **'Default login shell'**
+  String get settingsShellDefault;
+
+  /// Settings: new windows run a command.
+  ///
+  /// In en, this message translates to:
+  /// **'A command'**
+  String get settingsShellCommand;
+
+  /// Settings: placeholder of the shell command field.
+  ///
+  /// In en, this message translates to:
+  /// **'A program, such as /bin/zsh'**
+  String get settingsShellCommandPlaceholder;
+
+  /// Settings: row label of the tab shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab switching'**
+  String get settingsTabSwitching;
+
+  /// Settings: checkbox for the tab shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'⌘1 to ⌘9 select tabs'**
+  String get settingsTabSwitchingCheck;
+
+  /// Settings: section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows and tabs'**
+  String get settingsSectionWindowsTabs;
+
+  /// Settings: section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Programs'**
+  String get settingsSectionPrograms;
+
+  /// Settings: row label of mouse reporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse'**
+  String get settingsMouseLabel;
+
+  /// Settings: row label of command-click on links.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get settingsLinksLabel;
+
+  /// Settings: row label of prompt marks.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompts'**
+  String get settingsPromptsLabel;
+
+  /// Settings: section title of the Window Groups pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved window groups'**
+  String get settingsSavedGroups;
+
+  /// Settings: section title of the Encodings pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Character encoding'**
+  String get settingsCharacterEncoding;
+
+  /// Settings: the one encoding.
+  ///
+  /// In en, this message translates to:
+  /// **'Unicode (UTF-8)'**
+  String get settingsUtf8;
+
+  /// Profile colour well caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get profileColorBackground;
+
+  /// Profile colour well caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get profileColorText;
+
+  /// Profile colour well caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get profileColorBold;
+
+  /// Profile colour well caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection'**
+  String get profileColorSelection;
+
+  /// Profile colour well caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Cursor'**
+  String get profileColorCursor;
+
+  /// Title of the colour panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors'**
+  String get profileColorPanel;
+
+  /// Profile Text: checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Antialias text'**
+  String get profileAntialias;
+
+  /// Profile Text: checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow blinking text'**
+  String get profileBlinkingText;
+
+  /// Profile Text: checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Display ANSI colors'**
+  String get profileAnsiColors;
+
+  /// Profile Text: checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Use bright colors for bold text'**
+  String get profileBrightBold;
+
+  /// Profile row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get profileTitleLabel;
+
+  /// Profile Tab: row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Marks'**
+  String get profileMarksLabel;
+
+  /// Profile Window: checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the running process and its arguments'**
+  String get profileTitleProcess;
+
+  /// Profile Window: row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get profileRestoreLabel;
+
+  /// Profile Window: checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore the text when the window reopens'**
+  String get profileRestoreText;
+
+  /// Profile Window: row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines to restore'**
+  String get profileRestoreLines;
+
+  /// Unit after a number of lines.
+  ///
+  /// In en, this message translates to:
+  /// **'lines'**
+  String get profileLinesUnit;
+
+  /// Unit after a font size.
+  ///
+  /// In en, this message translates to:
+  /// **'pt'**
+  String get profilePointsUnit;
+
+  /// Profile: note under the controls that do nothing yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Antialiasing, blinking text, the process title and restoring text need support from the emulator and are not available yet.'**
+  String get profileNotYetNote;
 }
 
 class _AppLocalizationsDelegate

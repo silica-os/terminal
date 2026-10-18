@@ -702,4 +702,117 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get showMarks => 'Mostra i segni';
+
+  @override
+  String get settingsOnLaunch => 'All\'avvio apri';
+
+  @override
+  String get settingsLaunchNewWindow => 'Una nuova finestra';
+
+  @override
+  String settingsLaunchGroup(String name) {
+    return 'Gruppo di finestre «$name»';
+  }
+
+  @override
+  String get settingsShellNewWindows => 'Shell per le nuove finestre';
+
+  @override
+  String get settingsShellDefault => 'Shell di login predefinita';
+
+  @override
+  String get settingsShellCommand => 'Un comando';
+
+  @override
+  String get settingsShellCommandPlaceholder => 'Un programma, come /bin/zsh';
+
+  @override
+  String get settingsTabSwitching => 'Cambio pannello';
+
+  @override
+  String get settingsTabSwitchingCheck => '⌘1–⌘9 selezionano i pannelli';
+
+  @override
+  String get settingsSectionWindowsTabs => 'Finestre e pannelli';
+
+  @override
+  String get settingsSectionPrograms => 'Programmi';
+
+  @override
+  String get settingsMouseLabel => 'Mouse';
+
+  @override
+  String get settingsLinksLabel => 'Link';
+
+  @override
+  String get settingsPromptsLabel => 'Prompt';
+
+  @override
+  String get settingsSavedGroups => 'Gruppi di finestre salvati';
+
+  @override
+  String get settingsCharacterEncoding => 'Codifica dei caratteri';
+
+  @override
+  String get settingsUtf8 => 'Unicode (UTF-8)';
+
+  @override
+  String get profileColorBackground => 'Sfondo';
+
+  @override
+  String get profileColorText => 'Testo';
+
+  @override
+  String get profileColorBold => 'Grassetto';
+
+  @override
+  String get profileColorSelection => 'Selezione';
+
+  @override
+  String get profileColorCursor => 'Cursore';
+
+  @override
+  String get profileColorPanel => 'Colori';
+
+  @override
+  String get profileAntialias => 'Antialiasing del testo';
+
+  @override
+  String get profileBlinkingText => 'Consenti testo lampeggiante';
+
+  @override
+  String get profileAnsiColors => 'Mostra i colori ANSI';
+
+  @override
+  String get profileBrightBold => 'Usa colori vivaci per il grassetto';
+
+  @override
+  String get profileTitleLabel => 'Titolo';
+
+  @override
+  String get profileMarksLabel => 'Segni';
+
+  @override
+  String get profileTitleProcess =>
+      'Mostra il processo in esecuzione e i suoi argomenti';
+
+  @override
+  String get profileRestoreLabel => 'Ripristina';
+
+  @override
+  String get profileRestoreText =>
+      'Ripristina il testo quando la finestra si riapre';
+
+  @override
+  String get profileRestoreLines => 'Righe da ripristinare';
+
+  @override
+  String get profileLinesUnit => 'righe';
+
+  @override
+  String get profilePointsUnit => 'pt';
+
+  @override
+  String get profileNotYetNote =>
+      'Antialiasing, testo lampeggiante, titolo con il processo e ripristino del testo richiedono il supporto dell\'emulatore e non sono ancora disponibili.';
 }

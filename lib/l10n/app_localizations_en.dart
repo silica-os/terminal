@@ -694,4 +694,116 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showMarks => 'Show Marks';
+
+  @override
+  String get settingsOnLaunch => 'On launch, open';
+
+  @override
+  String get settingsLaunchNewWindow => 'A new window';
+
+  @override
+  String settingsLaunchGroup(String name) {
+    return 'Window group “$name”';
+  }
+
+  @override
+  String get settingsShellNewWindows => 'Shell for new windows';
+
+  @override
+  String get settingsShellDefault => 'Default login shell';
+
+  @override
+  String get settingsShellCommand => 'A command';
+
+  @override
+  String get settingsShellCommandPlaceholder => 'A program, such as /bin/zsh';
+
+  @override
+  String get settingsTabSwitching => 'Tab switching';
+
+  @override
+  String get settingsTabSwitchingCheck => '⌘1 to ⌘9 select tabs';
+
+  @override
+  String get settingsSectionWindowsTabs => 'Windows and tabs';
+
+  @override
+  String get settingsSectionPrograms => 'Programs';
+
+  @override
+  String get settingsMouseLabel => 'Mouse';
+
+  @override
+  String get settingsLinksLabel => 'Links';
+
+  @override
+  String get settingsPromptsLabel => 'Prompts';
+
+  @override
+  String get settingsSavedGroups => 'Saved window groups';
+
+  @override
+  String get settingsCharacterEncoding => 'Character encoding';
+
+  @override
+  String get settingsUtf8 => 'Unicode (UTF-8)';
+
+  @override
+  String get profileColorBackground => 'Background';
+
+  @override
+  String get profileColorText => 'Text';
+
+  @override
+  String get profileColorBold => 'Bold';
+
+  @override
+  String get profileColorSelection => 'Selection';
+
+  @override
+  String get profileColorCursor => 'Cursor';
+
+  @override
+  String get profileColorPanel => 'Colors';
+
+  @override
+  String get profileAntialias => 'Antialias text';
+
+  @override
+  String get profileBlinkingText => 'Allow blinking text';
+
+  @override
+  String get profileAnsiColors => 'Display ANSI colors';
+
+  @override
+  String get profileBrightBold => 'Use bright colors for bold text';
+
+  @override
+  String get profileTitleLabel => 'Title';
+
+  @override
+  String get profileMarksLabel => 'Marks';
+
+  @override
+  String get profileTitleProcess =>
+      'Show the running process and its arguments';
+
+  @override
+  String get profileRestoreLabel => 'Restore';
+
+  @override
+  String get profileRestoreText => 'Restore the text when the window reopens';
+
+  @override
+  String get profileRestoreLines => 'Lines to restore';
+
+  @override
+  String get profileLinesUnit => 'lines';
+
+  @override
+  String get profilePointsUnit => 'pt';
+
+  @override
+  String get profileNotYetNote =>
+      'Antialiasing, blinking text, the process title and restoring text need support from the emulator and are not available yet.';
 }

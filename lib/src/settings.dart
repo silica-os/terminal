@@ -40,6 +40,8 @@ enum CursorStyleChoice { block, underline, beam }
 /// The most lines "unlimited" scrollback keeps (the grid's own limit).
 const int unlimitedScrollback = 1000000;
 
+const Object _keep = Object();
+
 /// One profile: colours, font, cursor, window, tab, shell and keyboard.
 @immutable
 class TerminalProfile {
@@ -66,6 +68,18 @@ class TerminalProfile {
     this.titleShowsDirectory = true,
     this.bellVisual = true,
     this.bellNotify = true,
+    this.antialias = true,
+    this.blinkingText = true,
+    this.ansiColors = true,
+    this.brightBold = false,
+    this.titleShowsProcess = true,
+    this.restoreText = true,
+    this.restoreLines = 10000,
+    this.backgroundColor,
+    this.textColor,
+    this.boldColor,
+    this.selectionColor,
+    this.cursorColor,
   });
 
   final String id;
@@ -98,6 +112,34 @@ class TerminalProfile {
   final bool bellVisual;
   final bool bellNotify;
 
+  /// Text: antialiased glyphs (stored; the grid cannot switch it yet, see the Text pane).
+  final bool antialias;
+
+  /// Text: programs may blink text (stored; the emulator reports no blink attribute yet).
+  final bool blinkingText;
+
+  /// Text: show the ANSI colours programs ask for (off: every cell uses the text and background
+  /// colours).
+  final bool ansiColors;
+
+  /// Text: bold text in one of the eight normal ANSI colours uses its bright colour.
+  final bool brightBold;
+
+  /// Window: the title shows the running process and its arguments (stored; the embedder
+  /// reports no process name yet).
+  final bool titleShowsProcess;
+
+  /// Window: restore the text when the window reopens, and how many lines (stored; not done yet).
+  final bool restoreText;
+  final int restoreLines;
+
+  /// The scheme's colours replaced by the user (ARGB, `0xAARRGGBB`); null: the scheme's own.
+  final int? backgroundColor;
+  final int? textColor;
+  final int? boldColor;
+  final int? selectionColor;
+  final int? cursorColor;
+
   /// Lines the grid keeps above the screen.
   int get scrollback => scrollbackLimited
       ? scrollbackLines.clamp(0, unlimitedScrollback)
@@ -125,6 +167,18 @@ class TerminalProfile {
     bool? titleShowsDirectory,
     bool? bellVisual,
     bool? bellNotify,
+    bool? antialias,
+    bool? blinkingText,
+    bool? ansiColors,
+    bool? brightBold,
+    bool? titleShowsProcess,
+    bool? restoreText,
+    int? restoreLines,
+    Object? backgroundColor = _keep,
+    Object? textColor = _keep,
+    Object? boldColor = _keep,
+    Object? selectionColor = _keep,
+    Object? cursorColor = _keep,
     String? id,
   }) => TerminalProfile(
     id: id ?? this.id,
@@ -149,6 +203,24 @@ class TerminalProfile {
     titleShowsDirectory: titleShowsDirectory ?? this.titleShowsDirectory,
     bellVisual: bellVisual ?? this.bellVisual,
     bellNotify: bellNotify ?? this.bellNotify,
+    antialias: antialias ?? this.antialias,
+    blinkingText: blinkingText ?? this.blinkingText,
+    ansiColors: ansiColors ?? this.ansiColors,
+    brightBold: brightBold ?? this.brightBold,
+    titleShowsProcess: titleShowsProcess ?? this.titleShowsProcess,
+    restoreText: restoreText ?? this.restoreText,
+    restoreLines: restoreLines ?? this.restoreLines,
+    backgroundColor: identical(backgroundColor, _keep)
+        ? this.backgroundColor
+        : backgroundColor as int?,
+    textColor: identical(textColor, _keep) ? this.textColor : textColor as int?,
+    boldColor: identical(boldColor, _keep) ? this.boldColor : boldColor as int?,
+    selectionColor: identical(selectionColor, _keep)
+        ? this.selectionColor
+        : selectionColor as int?,
+    cursorColor: identical(cursorColor, _keep)
+        ? this.cursorColor
+        : cursorColor as int?,
   );
 
   Map<String, Object?> toJson() => {
@@ -174,6 +246,18 @@ class TerminalProfile {
     'titleShowsDirectory': titleShowsDirectory,
     'bellVisual': bellVisual,
     'bellNotify': bellNotify,
+    'antialias': antialias,
+    'blinkingText': blinkingText,
+    'ansiColors': ansiColors,
+    'brightBold': brightBold,
+    'titleShowsProcess': titleShowsProcess,
+    'restoreText': restoreText,
+    'restoreLines': restoreLines,
+    'backgroundColor': ?backgroundColor,
+    'textColor': ?textColor,
+    'boldColor': ?boldColor,
+    'selectionColor': ?selectionColor,
+    'cursorColor': ?cursorColor,
   };
 
   /// A profile from its JSON; null when it has no usable id and name. Bad values fall back to
@@ -194,6 +278,11 @@ class TerminalProfile {
     int count(String key, int fallback, int min, int max) {
       final v = json[key];
       return v is int ? v.clamp(min, max) : fallback;
+    }
+
+    int? colour(String key) {
+      final v = json[key];
+      return v is int ? v & 0xFFFFFFFF : null;
     }
 
     final size = json['fontSize'];
@@ -251,6 +340,18 @@ class TerminalProfile {
       ),
       bellVisual: flag('bellVisual', base.bellVisual),
       bellNotify: flag('bellNotify', base.bellNotify),
+      antialias: flag('antialias', base.antialias),
+      blinkingText: flag('blinkingText', base.blinkingText),
+      ansiColors: flag('ansiColors', base.ansiColors),
+      brightBold: flag('brightBold', base.brightBold),
+      titleShowsProcess: flag('titleShowsProcess', base.titleShowsProcess),
+      restoreText: flag('restoreText', base.restoreText),
+      restoreLines: count('restoreLines', base.restoreLines, 0, 1000000),
+      backgroundColor: colour('backgroundColor'),
+      textColor: colour('textColor'),
+      boldColor: colour('boldColor'),
+      selectionColor: colour('selectionColor'),
+      cursorColor: colour('cursorColor'),
     );
   }
 
@@ -490,6 +591,16 @@ class TerminalSettings extends ChangeNotifier {
   /// Command+click opens links.
   bool openLinks = true;
 
+  /// ⌘1 to ⌘9 select tabs.
+  bool tabSwitching = true;
+
+  /// The saved window group a launch opens; null: a new window with the default profile.
+  String? launchGroup;
+
+  /// The program new windows run instead of the login shell (split on spaces); empty: the
+  /// login shell.
+  String shellCommand = '';
+
   /// The text of the shell integration is offered to the shell (OSC 133 prompt marks).
   bool autoMarkPrompts = true;
 
@@ -570,6 +681,11 @@ class TerminalSettings extends ChangeNotifier {
     mouseReporting = flag('mouseReporting', mouseReporting);
     openLinks = flag('openLinks', openLinks);
     autoMarkPrompts = flag('autoMarkPrompts', autoMarkPrompts);
+    tabSwitching = flag('tabSwitching', tabSwitching);
+    final group = json['launchGroup'];
+    launchGroup = group is String && group.isNotEmpty ? group : null;
+    final shell = json['shellCommand'];
+    shellCommand = shell is String ? shell : '';
   }
 
   Map<String, Object?> toJson() => {
@@ -585,6 +701,9 @@ class TerminalSettings extends ChangeNotifier {
     'mouseReporting': mouseReporting,
     'openLinks': openLinks,
     'autoMarkPrompts': autoMarkPrompts,
+    'tabSwitching': tabSwitching,
+    if (launchGroup != null) 'launchGroup': launchGroup,
+    'shellCommand': shellCommand,
   };
 
   /// Saves, soon (changes in a burst are written once).
@@ -667,6 +786,7 @@ class TerminalSettings extends ChangeNotifier {
       for (final g in _groups)
         if (g.name != name) g,
     ];
+    if (launchGroup == name) launchGroup = null;
     _changed();
   }
 
@@ -679,6 +799,9 @@ class TerminalSettings extends ChangeNotifier {
     bool? mouseReporting,
     bool? openLinks,
     bool? autoMarkPrompts,
+    bool? tabSwitching,
+    Object? launchGroup = _keep,
+    String? shellCommand,
   }) {
     this.newWindowDirectory = newWindowDirectory ?? this.newWindowDirectory;
     this.newTabDirectory = newTabDirectory ?? this.newTabDirectory;
@@ -687,6 +810,18 @@ class TerminalSettings extends ChangeNotifier {
     this.mouseReporting = mouseReporting ?? this.mouseReporting;
     this.openLinks = openLinks ?? this.openLinks;
     this.autoMarkPrompts = autoMarkPrompts ?? this.autoMarkPrompts;
+    this.tabSwitching = tabSwitching ?? this.tabSwitching;
+    if (!identical(launchGroup, _keep))
+      this.launchGroup = launchGroup as String?;
+    this.shellCommand = shellCommand ?? this.shellCommand;
     _changed();
+  }
+}
+
+extension TerminalSettingsShell on TerminalSettings {
+  /// The program new windows run: [shellCommand] split on spaces; null: the login shell.
+  List<String>? get shellForNewWindows {
+    final parts = shellCommand.trim().split(RegExp(r'\s+'));
+    return parts.first.isEmpty ? null : parts;
   }
 }

@@ -253,6 +253,47 @@ void main() {
       markColor: const Color(0xff9a9ea6),
     );
 
+    test('ANSI colours can be turned off and bold can use the bright ones', () {
+      GridPainter with_({bool ansi = true, bool bright = false}) => GridPainter(
+        sample(),
+        colors: GridColors(
+          background: const Color(0xffffffff),
+          foreground: const Color(0xff000000),
+          bold: const Color(0xff000000),
+          selection: const Color(0xffb3d7ff),
+          cursor: const Color(0xff9d9d9d),
+          ansiColors: ansi,
+          brightBold: bright,
+        ),
+        style: terminalTextStyle(12),
+        cellWidth: 7.2,
+        cellHeight: 16,
+        padding: EdgeInsets.zero,
+        cache: ParagraphCache(),
+        decor: GridDecor(),
+        selectionColor: const Color(0xffb3d7ff),
+        findColor: const Color(0xffc8c8c8),
+        currentFindColor: const Color(0xff888888),
+        markColor: const Color(0xff9a9ea6),
+      );
+      final red = GridRun('x', paletteBase + 1, paletteBase + 2, 0);
+      final boldRed = GridRun('x', paletteBase + 1, -1, 1);
+      final normal = with_().runColors(red);
+      expect(normal.$1, isNot(const Color(0xff000000)));
+      expect(normal.$2, isNotNull);
+      final off = with_(ansi: false).runColors(red);
+      expect(off.$1, const Color(0xff000000));
+      expect(off.$2, const Color(0xffffffff));
+      final colours = with_().colors;
+      expect(with_().runColors(boldRed).$1, colours.indexed(1));
+      expect(with_(bright: true).runColors(boldRed).$1, colours.indexed(9));
+      // True colour is not an ANSI colour.
+      expect(
+        with_(ansi: false).runColors(const GridRun('x', 0x123456, -1, 0)).$1,
+        const Color(0xff123456),
+      );
+    });
+
     test('paints every kind of row without throwing, and caches layouts', () {
       final state = sample();
       final decor = GridDecor()

@@ -46,6 +46,47 @@ void main() {
     s.dispose();
   });
 
+  test('the new settings come back, and bad values fall back', () async {
+    final store = MemorySettingsStore();
+    final s = TerminalSettings(store: store, saveDelay: Duration.zero);
+    s.set(tabSwitching: false, launchGroup: 'work', shellCommand: '/bin/zsh');
+    s.updateProfile(
+      s.defaultProfile.copyWith(
+        ansiColors: false,
+        brightBold: true,
+        antialias: false,
+        restoreLines: 500,
+        backgroundColor: 0xFF102030,
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    final back = TerminalSettings(store: store);
+    await back.load();
+    expect(back.tabSwitching, isFalse);
+    expect(back.launchGroup, 'work');
+    expect(back.shellCommand, '/bin/zsh');
+    final p = back.defaultProfile;
+    expect((p.ansiColors, p.brightBold, p.antialias), (false, true, false));
+    expect(
+      (p.restoreLines, p.backgroundColor, p.textColor),
+      (500, 0xFF102030, null),
+    );
+    // A colour edit can be undone with null.
+    expect(p.copyWith(backgroundColor: null).backgroundColor, isNull);
+    final bad = TerminalProfile.fromJson({
+      'id': 'x',
+      'name': 'X',
+      'restoreLines': 'many',
+      'backgroundColor': 'red',
+      'ansiColors': 3,
+    })!;
+    expect(
+      (bad.restoreLines, bad.backgroundColor, bad.ansiColors),
+      (10000, null, true),
+    );
+    s.dispose();
+  });
+
   test('profiles: duplicate, edit, set the default, remove', () async {
     final s = TerminalSettings();
     final copy = s.duplicateProfile(s.defaultProfile, 'Basic copy');

@@ -927,5 +927,154 @@
   "showMarks": "Show Marks",
   "@showMarks": {
     "description": "View menu item that shows the prompt marks."
+  },
+  "settingsOnLaunch": "On launch, open",
+  "@settingsOnLaunch": {
+    "description": "Settings: row choosing what a launch opens."
+  },
+  "settingsLaunchNewWindow": "A new window",
+  "@settingsLaunchNewWindow": {
+    "description": "Settings: launch opens a new window."
+  },
+  "settingsLaunchGroup": "Window group “{name}”",
+  "@settingsLaunchGroup": {
+    "description": "Settings: launch opens this saved window group.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsShellNewWindows": "Shell for new windows",
+  "@settingsShellNewWindows": {
+    "description": "Settings: row choosing the program of new windows."
+  },
+  "settingsShellDefault": "Default login shell",
+  "@settingsShellDefault": {
+    "description": "Settings: the login shell runs in new windows."
+  },
+  "settingsShellCommand": "A command",
+  "@settingsShellCommand": {
+    "description": "Settings: new windows run a command."
+  },
+  "settingsShellCommandPlaceholder": "A program, such as /bin/zsh",
+  "@settingsShellCommandPlaceholder": {
+    "description": "Settings: placeholder of the shell command field."
+  },
+  "settingsTabSwitching": "Tab switching",
+  "@settingsTabSwitching": {
+    "description": "Settings: row label of the tab shortcuts."
+  },
+  "settingsTabSwitchingCheck": "⌘1 to ⌘9 select tabs",
+  "@settingsTabSwitchingCheck": {
+    "description": "Settings: checkbox for the tab shortcuts."
+  },
+  "settingsSectionWindowsTabs": "Windows and tabs",
+  "@settingsSectionWindowsTabs": {
+    "description": "Settings: section title."
+  },
+  "settingsSectionPrograms": "Programs",
+  "@settingsSectionPrograms": {
+    "description": "Settings: section title."
+  },
+  "settingsMouseLabel": "Mouse",
+  "@settingsMouseLabel": {
+    "description": "Settings: row label of mouse reporting."
+  },
+  "settingsLinksLabel": "Links",
+  "@settingsLinksLabel": {
+    "description": "Settings: row label of command-click on links."
+  },
+  "settingsPromptsLabel": "Prompts",
+  "@settingsPromptsLabel": {
+    "description": "Settings: row label of prompt marks."
+  },
+  "settingsSavedGroups": "Saved window groups",
+  "@settingsSavedGroups": {
+    "description": "Settings: section title of the Window Groups pane."
+  },
+  "settingsCharacterEncoding": "Character encoding",
+  "@settingsCharacterEncoding": {
+    "description": "Settings: section title of the Encodings pane."
+  },
+  "settingsUtf8": "Unicode (UTF-8)",
+  "@settingsUtf8": {
+    "description": "Settings: the one encoding."
+  },
+  "profileColorBackground": "Background",
+  "@profileColorBackground": {
+    "description": "Profile colour well caption."
+  },
+  "profileColorText": "Text",
+  "@profileColorText": {
+    "description": "Profile colour well caption."
+  },
+  "profileColorBold": "Bold",
+  "@profileColorBold": {
+    "description": "Profile colour well caption."
+  },
+  "profileColorSelection": "Selection",
+  "@profileColorSelection": {
+    "description": "Profile colour well caption."
+  },
+  "profileColorCursor": "Cursor",
+  "@profileColorCursor": {
+    "description": "Profile colour well caption."
+  },
+  "profileColorPanel": "Colors",
+  "@profileColorPanel": {
+    "description": "Title of the colour panel."
+  },
+  "profileAntialias": "Antialias text",
+  "@profileAntialias": {
+    "description": "Profile Text: checkbox."
+  },
+  "profileBlinkingText": "Allow blinking text",
+  "@profileBlinkingText": {
+    "description": "Profile Text: checkbox."
+  },
+  "profileAnsiColors": "Display ANSI colors",
+  "@profileAnsiColors": {
+    "description": "Profile Text: checkbox."
+  },
+  "profileBrightBold": "Use bright colors for bold text",
+  "@profileBrightBold": {
+    "description": "Profile Text: checkbox."
+  },
+  "profileTitleLabel": "Title",
+  "@profileTitleLabel": {
+    "description": "Profile row label."
+  },
+  "profileMarksLabel": "Marks",
+  "@profileMarksLabel": {
+    "description": "Profile Tab: row label."
+  },
+  "profileTitleProcess": "Show the running process and its arguments",
+  "@profileTitleProcess": {
+    "description": "Profile Window: checkbox."
+  },
+  "profileRestoreLabel": "Restore",
+  "@profileRestoreLabel": {
+    "description": "Profile Window: row label."
+  },
+  "profileRestoreText": "Restore the text when the window reopens",
+  "@profileRestoreText": {
+    "description": "Profile Window: checkbox."
+  },
+  "profileRestoreLines": "Lines to restore",
+  "@profileRestoreLines": {
+    "description": "Profile Window: row label."
+  },
+  "profileLinesUnit": "lines",
+  "@profileLinesUnit": {
+    "description": "Unit after a number of lines."
+  },
+  "profilePointsUnit": "pt",
+  "@profilePointsUnit": {
+    "description": "Unit after a font size."
+  },
+  "profileNotYetNote": "Antialiasing, blinking text, the process title and restoring text need support from the emulator and are not available yet.",
+  "@profileNotYetNote": {
+    "description": "Profile: note under the controls that do nothing yet."
   }
 }

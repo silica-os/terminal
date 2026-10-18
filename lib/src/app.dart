@@ -62,6 +62,9 @@ class TerminalApp {
   /// Opens another window; null result: the system cannot. Tests replace it.
   final Future<bool> Function(TerminalApp app, WindowSeed seed)? windowOpener;
 
+  /// Whether the first window of this run has opened (it may open the launch group).
+  bool launched = false;
+
   /// The open windows, the first being the main one.
   final List<TerminalWindowState> windows = [];
 

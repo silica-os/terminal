@@ -475,14 +475,27 @@ class GridPainter extends CustomPainter {
 
   Color _color(int value, {required bool foreground}) {
     if (value < 0) return foreground ? colors.foreground : colors.background;
-    if (value >= paletteBase) return colors.indexed(value - paletteBase);
+    if (value >= paletteBase) {
+      if (!colors.ansiColors) {
+        return foreground ? colors.foreground : colors.background;
+      }
+      return colors.indexed(value - paletteBase);
+    }
     return Color(0xff000000 | value);
   }
 
   /// The foreground and background of a run after inverse, dim and bold.
-  (Color, Color?) _runColors(GridRun run) {
+  @visibleForTesting
+  (Color, Color?) runColors(GridRun run) {
     var fg = _color(run.fg, foreground: true);
     if (run.bold && run.fg < 0) fg = colors.bold;
+    if (run.bold &&
+        colors.brightBold &&
+        colors.ansiColors &&
+        run.fg >= paletteBase &&
+        run.fg < paletteBase + 8) {
+      fg = colors.indexed(run.fg - paletteBase + 8);
+    }
     Color? bg = run.bg >= 0 ? _color(run.bg, foreground: false) : null;
     if (run.inverse) {
       final swapped = bg ?? colors.background;
@@ -521,7 +534,7 @@ class GridPainter extends CustomPainter {
   ui.Paragraph _rowParagraph(GridRow row) => cache.get(row.key, () {
     final builder = _builder();
     for (final run in row.runs) {
-      builder.pushStyle(_textStyle(run, _runColors(run).$1));
+      builder.pushStyle(_textStyle(run, runColors(run).$1));
       builder.addText(run.text);
       builder.pop();
     }
@@ -532,8 +545,7 @@ class GridPainter extends CustomPainter {
   ui.Paragraph _runParagraph(GridRun run) => cache.get(
     'r${run.fg},${run.bg},${run.flags},${run.link ?? ''}\u0001${run.text}',
     () {
-      final builder = _builder()
-        ..pushStyle(_textStyle(run, _runColors(run).$1));
+      final builder = _builder()..pushStyle(_textStyle(run, runColors(run).$1));
       builder.addText(run.text);
       return builder.build()
         ..layout(const ui.ParagraphConstraints(width: double.infinity));
@@ -558,7 +570,7 @@ class GridPainter extends CustomPainter {
       final row = state.lines[y];
       var x = 0;
       for (final run in row.runs) {
-        final bg = _runColors(run).$2;
+        final bg = runColors(run).$2;
         if (bg != null) {
           fill.color = bg;
           canvas.drawRect(cells(y, x, x + run.cells - 1), fill);

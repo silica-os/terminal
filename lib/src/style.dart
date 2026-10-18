@@ -210,6 +210,8 @@ class GridColors {
     this.opacity = 1,
     this.normal = ansiDarkNormal,
     this.bright = ansiDarkBright,
+    this.ansiColors = true,
+    this.brightBold = false,
   });
 
   final Color background;
@@ -223,16 +225,38 @@ class GridColors {
   final List<Color> normal;
   final List<Color> bright;
 
-  GridColors withOpacity(double value) => GridColors(
-    background: background,
-    foreground: foreground,
-    bold: bold,
-    selection: selection,
-    cursor: cursor,
-    opacity: value.clamp(0.3, 1.0),
+  /// Whether programs' ANSI colours (the 256-colour palette) are shown; off, every cell uses
+  /// the text and background colours (Profiles > Text, "Display ANSI colors").
+  final bool ansiColors;
+
+  /// Whether bold text in a normal ANSI colour uses the bright one ("Use bright colors for
+  /// bold text").
+  final bool brightBold;
+
+  GridColors copyWith({
+    Color? background,
+    Color? foreground,
+    Color? bold,
+    Color? selection,
+    Color? cursor,
+    double? opacity,
+    bool? ansiColors,
+    bool? brightBold,
+  }) => GridColors(
+    background: background ?? this.background,
+    foreground: foreground ?? this.foreground,
+    bold: bold ?? this.bold,
+    selection: selection ?? this.selection,
+    cursor: cursor ?? this.cursor,
+    opacity: opacity ?? this.opacity,
     normal: normal,
     bright: bright,
+    ansiColors: ansiColors ?? this.ansiColors,
+    brightBold: brightBold ?? this.brightBold,
   );
+
+  GridColors withOpacity(double value) =>
+      copyWith(opacity: value.clamp(0.3, 1.0));
 
   /// Entry `i` of the 256-colour palette: the profile's 16 ANSI colours, then the xterm
   /// 6 × 6 × 6 cube and the 24 greys.

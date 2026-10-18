@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Settings on the Amalfi design (800 × 680): the Segmented Control, Icon + Label for the four
+  panes, regular controls, ten presets as real profiles with 40 × 28 previews, radio buttons for
+  "Ask before closing", editable scheme colours. New settings that work: On launch (a saved window
+  group), Shell for new windows, Tab switching (⌘1 to ⌘9), Display ANSI colors, Use bright colors
+  for bold text. Antialias text, Allow blinking text, the process in the title and restoring the
+  text are stored and shown disabled until the emulator can serve them.
 - The emulator is the embedder's grid engine (alacritty_terminal in Rust); xterm.dart is gone.
   Flutter paints the rows of a session. Scrollback viewing with the measured scroller, mouse
   selection (character, word, line, rectangle), primary selection, mouse reporting (X10,
