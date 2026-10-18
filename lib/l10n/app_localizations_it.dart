@@ -390,4 +390,316 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get searchManIndex => 'Cerca indice pagina man per selezione';
+
+  @override
+  String aboutMessage(String version) {
+    return 'Versione $version. Il terminale di Silica. Software libero con licenze MIT e Apache 2.0.';
+  }
+
+  @override
+  String get askAlways => 'Sempre';
+
+  @override
+  String get askNever => 'Mai';
+
+  @override
+  String get askRunning => 'Solo se ci sono processi oltre alla shell di login';
+
+  @override
+  String bellNotification(String title) {
+    return '$title ha suonato il campanello.';
+  }
+
+  @override
+  String get commandPlaceholder => 'Comando';
+
+  @override
+  String get connect => 'Connetti';
+
+  @override
+  String get copy => 'Copia';
+
+  @override
+  String get paste => 'Incolla';
+
+  @override
+  String get selectAll => 'Seleziona tutto';
+
+  @override
+  String get cursorBar => 'Barra';
+
+  @override
+  String get cursorBlock => 'Blocco';
+
+  @override
+  String get cursorUnderline => 'Sottolineato';
+
+  @override
+  String get editTitleMessage =>
+      'Il titolo sostituisce quello impostato dal programma, per questo pannello.';
+
+  @override
+  String get exitClose => 'Chiudi la finestra';
+
+  @override
+  String get exitCloseIfClean => 'Chiudi se la shell è uscita senza errori';
+
+  @override
+  String get exitKeep => 'Non chiudere';
+
+  @override
+  String get groupNamePlaceholder => 'Nome del gruppo';
+
+  @override
+  String get hideTabBar => 'Nascondi barra dei pannelli';
+
+  @override
+  String get inspectorCommand => 'Comando';
+
+  @override
+  String get inspectorDirectory => 'Cartella';
+
+  @override
+  String get inspectorLoginShell => 'La shell di login';
+
+  @override
+  String get inspectorNotStarted => 'Non in esecuzione';
+
+  @override
+  String get inspectorProfile => 'Profilo';
+
+  @override
+  String get inspectorRunning => 'In esecuzione';
+
+  @override
+  String get inspectorSize => 'Dimensione';
+
+  @override
+  String get inspectorStatus => 'Stato';
+
+  @override
+  String get inspectorTitle => 'Ispettore';
+
+  @override
+  String get inspectorTitleRow => 'Titolo';
+
+  @override
+  String get inspectorUnknown => 'Sconosciuta';
+
+  @override
+  String get newCommandMessage =>
+      'Il comando viene eseguito in una nuova finestra.';
+
+  @override
+  String get newRemoteMessage =>
+      'Un host, utente@host o un indirizzo ssh://. La connessione si apre in una nuova finestra.';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get profileAdvanced => 'Avanzate';
+
+  @override
+  String get profileAskBeforeClosing => 'Chiedi prima di chiudere';
+
+  @override
+  String get profileBell => 'Campanello';
+
+  @override
+  String get profileBellNotify =>
+      'Notifica quando suona il campanello in un pannello in secondo piano';
+
+  @override
+  String get profileBellVisual =>
+      'Fai lampeggiare la finestra per il campanello';
+
+  @override
+  String get profileBoldText => 'Usa il grassetto per il testo in grassetto';
+
+  @override
+  String get profileColumns => 'Colonne';
+
+  @override
+  String get profileCursor => 'Cursore';
+
+  @override
+  String get profileCursorBlink => 'Fai lampeggiare il cursore';
+
+  @override
+  String get profileFont => 'Carattere';
+
+  @override
+  String get profileFontSize => 'Dimensione del carattere';
+
+  @override
+  String get profileKeyboard => 'Tastiera';
+
+  @override
+  String get profileName => 'Nome';
+
+  @override
+  String get profileOptionNote =>
+      'Opzione invia Escape prima del tasto, come si aspettano programmi quali Emacs e readline.';
+
+  @override
+  String get profileRows => 'Righe';
+
+  @override
+  String get profileScheme => 'Colori';
+
+  @override
+  String get profileScrollback => 'Scorrimento all\'indietro';
+
+  @override
+  String get profileScrollbackKeep => 'Conserva';
+
+  @override
+  String get profileScrollbackLines => 'Righe';
+
+  @override
+  String get profileShell => 'Shell';
+
+  @override
+  String get profileShowMarks => 'Mostra i segni dei prompt';
+
+  @override
+  String get profileStartup => 'Esegui all\'avvio';
+
+  @override
+  String get profileStartupPlaceholder => 'Un comando';
+
+  @override
+  String get profileTab => 'Pannello';
+
+  @override
+  String get profileText => 'Testo';
+
+  @override
+  String get profileTitleDirectory => 'Mostra la cartella nel titolo';
+
+  @override
+  String get profileTitleSize =>
+      'Mostra la dimensione nel titolo della finestra';
+
+  @override
+  String get profileWhenExits => 'Quando la shell termina';
+
+  @override
+  String get profileWindow => 'Finestra';
+
+  @override
+  String get run => 'Esegui';
+
+  @override
+  String get save => 'Salva';
+
+  @override
+  String get saveGroupMessage =>
+      'Le finestre aperte e i loro pannelli vengono salvati con questo nome.';
+
+  @override
+  String get schemeDefault => 'Predefinito (segue l\'aspetto)';
+
+  @override
+  String get scrollbackLimited => 'Limitato';
+
+  @override
+  String get scrollbackUnlimited => 'Illimitato';
+
+  @override
+  String get serverPlaceholder => 'Server';
+
+  @override
+  String get settingsAutoMark => 'Segna i prompt automaticamente';
+
+  @override
+  String get settingsClipboard => 'Appunti';
+
+  @override
+  String get settingsClipboardNote =>
+      'I programmi lo chiedono con la sequenza di escape OSC 52. La lettura resta disattivata se non la consenti.';
+
+  @override
+  String get settingsClipboardRead =>
+      'Consenti ai programmi di leggere gli appunti';
+
+  @override
+  String get settingsClipboardWrite =>
+      'Consenti ai programmi di scrivere negli appunti';
+
+  @override
+  String settingsCopyName(String name) {
+    return 'Copia di $name';
+  }
+
+  @override
+  String settingsDefaultMark(String name) {
+    return '$name (predefinito)';
+  }
+
+  @override
+  String get settingsDefaultProfile => 'Profilo predefinito';
+
+  @override
+  String get settingsDuplicate => 'Duplica';
+
+  @override
+  String get settingsEncodings => 'Codifiche';
+
+  @override
+  String get settingsEncodingsNote =>
+      'Terminale parla Unicode (UTF-8) con i programmi. Le altre codifiche non sono disponibili.';
+
+  @override
+  String get settingsGeneral => 'Generale';
+
+  @override
+  String settingsGroupSummary(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count finestre',
+      one: '1 finestra',
+    );
+    return '$name — $_temp0';
+  }
+
+  @override
+  String get settingsHome => 'La cartella Home';
+
+  @override
+  String get settingsMouseReporting =>
+      'Invia gli eventi del mouse ai programmi che li richiedono';
+
+  @override
+  String get settingsNewTabs => 'I nuovi pannelli si aprono in';
+
+  @override
+  String get settingsNewWindows => 'Le nuove finestre si aprono in';
+
+  @override
+  String get settingsNoGroups =>
+      'Nessun gruppo di finestre. Usa Finestra › Salva finestre come gruppo per crearne uno.';
+
+  @override
+  String get settingsOpenLinks => 'Comando-clic apre i collegamenti';
+
+  @override
+  String get settingsProfiles => 'Profili';
+
+  @override
+  String get settingsRemove => 'Rimuovi';
+
+  @override
+  String get settingsSameDirectory => 'La cartella del pannello corrente';
+
+  @override
+  String get settingsTitle => 'Impostazioni di Terminale';
+
+  @override
+  String get settingsWindowGroups => 'Gruppi di finestre';
+
+  @override
+  String get showMarks => 'Mostra i segni';
 }

@@ -1,246 +1,931 @@
 {
   "@@locale": "en",
   "appTitle": "Terminal",
-  "@appTitle": {"description": "Name of the app, in the window title and the Dock."},
+  "@appTitle": {
+    "description": "Name of the app, in the window title and the Dock."
+  },
   "windowTitle": "{title} — {columns}×{rows}",
   "@windowTitle": {
     "description": "Window title: the running program or the title it set, then the size in character cells.",
-    "placeholders": {"title": {"type": "String"}, "columns": {"type": "int"}, "rows": {"type": "int"}}
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "columns": {
+        "type": "int"
+      },
+      "rows": {
+        "type": "int"
+      }
+    }
   },
   "newTab": "New Tab",
-  "@newTab": {"description": "Command and button that opens a new tab."},
+  "@newTab": {
+    "description": "Command and button that opens a new tab."
+  },
   "closeTab": "Close Tab",
-  "@closeTab": {"description": "Command and button that closes the current tab."},
+  "@closeTab": {
+    "description": "Command and button that closes the current tab."
+  },
   "closeTabConfirmTitle": "Do you want to terminate running processes in this tab?",
-  "@closeTabConfirmTitle": {"description": "Title of the alert shown when closing a tab whose shell runs another program."},
+  "@closeTabConfirmTitle": {
+    "description": "Title of the alert shown when closing a tab whose shell runs another program."
+  },
   "closeTabConfirmMessage": "Closing this tab will terminate the running processes in it.",
-  "@closeTabConfirmMessage": {"description": "Message of that alert."},
+  "@closeTabConfirmMessage": {
+    "description": "Message of that alert."
+  },
   "closeWindowConfirmTitle": "Do you want to terminate running processes in this window?",
-  "@closeWindowConfirmTitle": {"description": "Title of the alert shown when closing a window with a tab whose shell runs another program."},
+  "@closeWindowConfirmTitle": {
+    "description": "Title of the alert shown when closing a window with a tab whose shell runs another program."
+  },
   "closeWindowConfirmMessage": "Closing this window will terminate the running processes in it.",
-  "@closeWindowConfirmMessage": {"description": "Message of that alert."},
+  "@closeWindowConfirmMessage": {
+    "description": "Message of that alert."
+  },
   "terminate": "Terminate",
-  "@terminate": {"description": "Destructive button of that alert."},
+  "@terminate": {
+    "description": "Destructive button of that alert."
+  },
   "cancel": "Cancel",
-  "@cancel": {"description": "Button that dismisses an alert without acting."},
+  "@cancel": {
+    "description": "Button that dismisses an alert without acting."
+  },
   "noPty": "The terminal needs the Silica desktop: its pseudo-terminal service is not available here.",
-  "@noPty": {"description": "Shown in the terminal area when the app runs outside Silica, where the pseudo-terminal channel is missing."},
+  "@noPty": {
+    "description": "Shown in the terminal area when the app runs outside Silica, where the pseudo-terminal channel is missing."
+  },
   "spawnFailed": "Could not start the shell: {error}",
-  "@spawnFailed": {"description": "Shown when the shell process cannot be started.", "placeholders": {"error": {"type": "String"}}},
+  "@spawnFailed": {
+    "description": "Shown when the shell process cannot be started.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "processExited": "The process exited with code {code}.",
-  "@processExited": {"description": "Shown at the end of the output when the shell exits.", "placeholders": {"code": {"type": "int"}}},
+  "@processExited": {
+    "description": "Shown at the end of the output when the shell exits.",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "processKilled": "The process was ended by signal {signal}.",
-  "@processKilled": {"description": "Shown when the shell is ended by a signal.", "placeholders": {"signal": {"type": "int"}}},
+  "@processKilled": {
+    "description": "Shown when the shell is ended by a signal.",
+    "placeholders": {
+      "signal": {
+        "type": "int"
+      }
+    }
+  },
   "find": "Find",
-  "@find": {"description": "Placeholder of the find field."},
+  "@find": {
+    "description": "Placeholder of the find field."
+  },
   "findMatches": "{current} of {count}",
-  "@findMatches": {"description": "Position of the current match among all matches of the find field.", "placeholders": {"current": {"type": "int"}, "count": {"type": "int"}}},
+  "@findMatches": {
+    "description": "Position of the current match among all matches of the find field.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "findNoMatches": "No matches",
-  "@findNoMatches": {"description": "The find field found nothing."},
+  "@findNoMatches": {
+    "description": "The find field found nothing."
+  },
   "findPrevious": "Previous match",
-  "@findPrevious": {"description": "Button of the find bar that selects the previous match."},
+  "@findPrevious": {
+    "description": "Button of the find bar that selects the previous match."
+  },
   "findNext": "Next match",
-  "@findNext": {"description": "Button of the find bar that selects the next match."},
+  "@findNext": {
+    "description": "Button of the find bar that selects the next match."
+  },
   "findDone": "Done",
-  "@findDone": {"description": "Button that closes the find bar."},
+  "@findDone": {
+    "description": "Button that closes the find bar."
+  },
   "menuShell": "Shell",
-  "@menuShell": {"description": "Menu bar: the Shell menu."},
+  "@menuShell": {
+    "description": "Menu bar: the Shell menu."
+  },
   "menuEdit": "Edit",
-  "@menuEdit": {"description": "Menu bar: the Edit menu."},
+  "@menuEdit": {
+    "description": "Menu bar: the Edit menu."
+  },
   "menuView": "View",
-  "@menuView": {"description": "Menu bar: the View menu."},
+  "@menuView": {
+    "description": "Menu bar: the View menu."
+  },
   "menuWindow": "Window",
-  "@menuWindow": {"description": "Menu bar: the Window menu."},
+  "@menuWindow": {
+    "description": "Menu bar: the Window menu."
+  },
   "menuHelp": "Help",
-  "@menuHelp": {"description": "Menu bar: the Help menu."},
+  "@menuHelp": {
+    "description": "Menu bar: the Help menu."
+  },
   "secureKeyboardEntry": "Secure Keyboard Entry",
-  "@secureKeyboardEntry": {"description": "App menu item."},
+  "@secureKeyboardEntry": {
+    "description": "App menu item."
+  },
   "newWindow": "New Window",
-  "@newWindow": {"description": "Shell menu: submenu."},
+  "@newWindow": {
+    "description": "Shell menu: submenu."
+  },
   "newWindowWithProfile": "New Window with Profile - {profile}",
-  "@newWindowWithProfile": {"description": "Shell menu: new window with the default profile.", "placeholders": {"profile": {"type": "String"}}},
+  "@newWindowWithProfile": {
+    "description": "Shell menu: new window with the default profile.",
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "newWindowSameCommand": "New Window with Same Command",
-  "@newWindowSameCommand": {"description": "Shell menu."},
+  "@newWindowSameCommand": {
+    "description": "Shell menu."
+  },
   "newTabWithProfile": "New Tab with Profile - {profile}",
-  "@newTabWithProfile": {"description": "Shell menu: new tab with the default profile.", "placeholders": {"profile": {"type": "String"}}},
+  "@newTabWithProfile": {
+    "description": "Shell menu: new tab with the default profile.",
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "newTabSameCommand": "New Tab with Same Command",
-  "@newTabSameCommand": {"description": "Shell menu."},
+  "@newTabSameCommand": {
+    "description": "Shell menu."
+  },
   "newCommand": "New Command…",
-  "@newCommand": {"description": "Shell menu."},
+  "@newCommand": {
+    "description": "Shell menu."
+  },
   "newRemoteConnection": "New Remote Connection…",
-  "@newRemoteConnection": {"description": "Shell menu."},
+  "@newRemoteConnection": {
+    "description": "Shell menu."
+  },
   "open": "Open…",
-  "@open": {"description": "Shell menu."},
+  "@open": {
+    "description": "Shell menu."
+  },
   "closeWindow": "Close Window",
-  "@closeWindow": {"description": "Shell menu: closes the window when it has one tab."},
+  "@closeWindow": {
+    "description": "Shell menu: closes the window when it has one tab."
+  },
   "closeAll": "Close All",
-  "@closeAll": {"description": "Shell menu."},
+  "@closeAll": {
+    "description": "Shell menu."
+  },
   "useSettingsAsDefault": "Use Settings as Default",
-  "@useSettingsAsDefault": {"description": "Shell menu."},
+  "@useSettingsAsDefault": {
+    "description": "Shell menu."
+  },
   "exportSettings": "Export Settings…",
-  "@exportSettings": {"description": "Shell menu."},
+  "@exportSettings": {
+    "description": "Shell menu."
+  },
   "exportText": "Export Text As…",
-  "@exportText": {"description": "Shell menu."},
+  "@exportText": {
+    "description": "Shell menu."
+  },
   "exportSelectedText": "Export Selected Text As…",
-  "@exportSelectedText": {"description": "Shell menu."},
+  "@exportSelectedText": {
+    "description": "Shell menu."
+  },
   "showInspector": "Show Inspector",
-  "@showInspector": {"description": "Shell menu."},
+  "@showInspector": {
+    "description": "Shell menu."
+  },
   "editTitle": "Edit Title",
-  "@editTitle": {"description": "Shell menu."},
+  "@editTitle": {
+    "description": "Shell menu."
+  },
   "editBackgroundColor": "Edit Background Color",
-  "@editBackgroundColor": {"description": "Shell menu."},
+  "@editBackgroundColor": {
+    "description": "Shell menu."
+  },
   "reset": "Reset",
-  "@reset": {"description": "Shell menu: resets the terminal."},
+  "@reset": {
+    "description": "Shell menu: resets the terminal."
+  },
   "hardReset": "Hard Reset",
-  "@hardReset": {"description": "Shell menu."},
+  "@hardReset": {
+    "description": "Shell menu."
+  },
   "printSelection": "Print Selection…",
-  "@printSelection": {"description": "Shell menu."},
+  "@printSelection": {
+    "description": "Shell menu."
+  },
   "print": "Print…",
-  "@print": {"description": "Shell menu."},
+  "@print": {
+    "description": "Shell menu."
+  },
   "copySpecial": "Copy Special",
-  "@copySpecial": {"description": "Edit menu: submenu."},
+  "@copySpecial": {
+    "description": "Edit menu: submenu."
+  },
   "copyWithoutBackground": "Copy Without Background Color",
-  "@copyWithoutBackground": {"description": "Edit menu."},
+  "@copyWithoutBackground": {
+    "description": "Edit menu."
+  },
   "copyTextOnly": "Copy Text Only",
-  "@copyTextOnly": {"description": "Edit menu."},
+  "@copyTextOnly": {
+    "description": "Edit menu."
+  },
   "copyStyle": "Style for Copy Command",
-  "@copyStyle": {"description": "Edit menu: heading of the styles."},
+  "@copyStyle": {
+    "description": "Edit menu: heading of the styles."
+  },
   "terminalSettingsDefault": "Terminal Settings (default)",
-  "@terminalSettingsDefault": {"description": "Edit menu: copy style that follows the profile."},
+  "@terminalSettingsDefault": {
+    "description": "Edit menu: copy style that follows the profile."
+  },
   "plainText": "Text Only",
-  "@plainText": {"description": "Edit menu: copy style."},
+  "@plainText": {
+    "description": "Edit menu: copy style."
+  },
   "pasteEscaped": "Paste Escaped Text",
-  "@pasteEscaped": {"description": "Edit menu."},
+  "@pasteEscaped": {
+    "description": "Edit menu."
+  },
   "pasteSelection": "Paste Selection",
-  "@pasteSelection": {"description": "Edit menu."},
+  "@pasteSelection": {
+    "description": "Edit menu."
+  },
   "pasteSelectionEscaped": "Paste Selection Escaped",
-  "@pasteSelectionEscaped": {"description": "Edit menu."},
+  "@pasteSelectionEscaped": {
+    "description": "Edit menu."
+  },
   "selectBetweenMarks": "Select Between Marks",
-  "@selectBetweenMarks": {"description": "Edit menu."},
+  "@selectBetweenMarks": {
+    "description": "Edit menu."
+  },
   "marks": "Marks",
-  "@marks": {"description": "Edit menu: submenu."},
+  "@marks": {
+    "description": "Edit menu: submenu."
+  },
   "autoMarkPrompts": "Automatically Mark Prompt Lines",
-  "@autoMarkPrompts": {"description": "Edit menu."},
+  "@autoMarkPrompts": {
+    "description": "Edit menu."
+  },
   "markLineAndNewline": "Mark Line and Start New Line",
-  "@markLineAndNewline": {"description": "Edit menu."},
+  "@markLineAndNewline": {
+    "description": "Edit menu."
+  },
   "newlineWithoutMark": "Start New Line Without Marking",
-  "@newlineWithoutMark": {"description": "Edit menu."},
+  "@newlineWithoutMark": {
+    "description": "Edit menu."
+  },
   "mark": "Mark",
-  "@mark": {"description": "Edit menu."},
+  "@mark": {
+    "description": "Edit menu."
+  },
   "markAsBookmark": "Mark as Bookmark",
-  "@markAsBookmark": {"description": "Edit menu."},
+  "@markAsBookmark": {
+    "description": "Edit menu."
+  },
   "removeMark": "Remove Mark",
-  "@removeMark": {"description": "Edit menu."},
+  "@removeMark": {
+    "description": "Edit menu."
+  },
   "bookmarks": "Bookmarks",
-  "@bookmarks": {"description": "Edit menu: submenu."},
+  "@bookmarks": {
+    "description": "Edit menu: submenu."
+  },
   "insertBookmark": "Insert Bookmark",
-  "@insertBookmark": {"description": "Edit menu."},
+  "@insertBookmark": {
+    "description": "Edit menu."
+  },
   "insertNamedBookmark": "Insert Bookmark with Name…",
-  "@insertNamedBookmark": {"description": "Edit menu."},
+  "@insertNamedBookmark": {
+    "description": "Edit menu."
+  },
   "noBookmarks": "No Bookmarks",
-  "@noBookmarks": {"description": "Edit menu: empty list of bookmarks."},
+  "@noBookmarks": {
+    "description": "Edit menu: empty list of bookmarks."
+  },
   "navigate": "Navigate",
-  "@navigate": {"description": "Edit menu: submenu."},
+  "@navigate": {
+    "description": "Edit menu: submenu."
+  },
   "previousMark": "Go to Previous Mark",
-  "@previousMark": {"description": "Edit menu."},
+  "@previousMark": {
+    "description": "Edit menu."
+  },
   "selectToPreviousMark": "Select to Previous Mark",
-  "@selectToPreviousMark": {"description": "Edit menu."},
+  "@selectToPreviousMark": {
+    "description": "Edit menu."
+  },
   "nextMark": "Go to Next Mark",
-  "@nextMark": {"description": "Edit menu."},
+  "@nextMark": {
+    "description": "Edit menu."
+  },
   "selectToNextMark": "Select to Next Mark",
-  "@selectToNextMark": {"description": "Edit menu."},
+  "@selectToNextMark": {
+    "description": "Edit menu."
+  },
   "previousBookmark": "Go to Previous Bookmark",
-  "@previousBookmark": {"description": "Edit menu."},
+  "@previousBookmark": {
+    "description": "Edit menu."
+  },
   "selectToPreviousBookmark": "Select to Previous Bookmark",
-  "@selectToPreviousBookmark": {"description": "Edit menu."},
+  "@selectToPreviousBookmark": {
+    "description": "Edit menu."
+  },
   "nextBookmark": "Go to Next Bookmark",
-  "@nextBookmark": {"description": "Edit menu."},
+  "@nextBookmark": {
+    "description": "Edit menu."
+  },
   "selectToNextBookmark": "Select to Next Bookmark",
-  "@selectToNextBookmark": {"description": "Edit menu."},
+  "@selectToNextBookmark": {
+    "description": "Edit menu."
+  },
   "clearToPreviousMark": "Clear to Previous Mark",
-  "@clearToPreviousMark": {"description": "Edit menu."},
+  "@clearToPreviousMark": {
+    "description": "Edit menu."
+  },
   "clearToPreviousBookmark": "Clear to Previous Bookmark",
-  "@clearToPreviousBookmark": {"description": "Edit menu."},
+  "@clearToPreviousBookmark": {
+    "description": "Edit menu."
+  },
   "clearToStart": "Clear to Start",
-  "@clearToStart": {"description": "Edit menu."},
+  "@clearToStart": {
+    "description": "Edit menu."
+  },
   "removeExcessLines": "Remove Excess Lines",
-  "@removeExcessLines": {"description": "Edit menu."},
+  "@removeExcessLines": {
+    "description": "Edit menu."
+  },
   "clearScreen": "Clear Screen",
-  "@clearScreen": {"description": "Edit menu."},
+  "@clearScreen": {
+    "description": "Edit menu."
+  },
   "fillScreen": "Fill Screen",
-  "@fillScreen": {"description": "Edit menu."},
+  "@fillScreen": {
+    "description": "Edit menu."
+  },
   "findEllipsis": "Find…",
-  "@findEllipsis": {"description": "Edit menu, Find submenu: opens the find bar."},
+  "@findEllipsis": {
+    "description": "Edit menu, Find submenu: opens the find bar."
+  },
   "findNextItem": "Find Next",
-  "@findNextItem": {"description": "Edit menu, Find submenu."},
+  "@findNextItem": {
+    "description": "Edit menu, Find submenu."
+  },
   "findPreviousItem": "Find Previous",
-  "@findPreviousItem": {"description": "Edit menu, Find submenu."},
+  "@findPreviousItem": {
+    "description": "Edit menu, Find submenu."
+  },
   "findSelectAll": "Select All",
-  "@findSelectAll": {"description": "Edit menu, Find submenu: selects all matches."},
+  "@findSelectAll": {
+    "description": "Edit menu, Find submenu: selects all matches."
+  },
   "findSelectAllInSelection": "Select All in Selection",
-  "@findSelectAllInSelection": {"description": "Edit menu, Find submenu."},
+  "@findSelectAllInSelection": {
+    "description": "Edit menu, Find submenu."
+  },
   "hideFindBar": "Hide Find Bar",
-  "@hideFindBar": {"description": "Edit menu, Find submenu."},
+  "@hideFindBar": {
+    "description": "Edit menu, Find submenu."
+  },
   "useSelectionForFind": "Use Selection for Find",
-  "@useSelectionForFind": {"description": "Edit menu, Find submenu."},
+  "@useSelectionForFind": {
+    "description": "Edit menu, Find submenu."
+  },
   "jumpToSelection": "Jump to Selection",
-  "@jumpToSelection": {"description": "Edit menu, Find submenu."},
+  "@jumpToSelection": {
+    "description": "Edit menu, Find submenu."
+  },
   "showColors": "Show Colors",
-  "@showColors": {"description": "Edit menu."},
+  "@showColors": {
+    "description": "Edit menu."
+  },
   "optionAsMeta": "Use Option as Meta Key",
-  "@optionAsMeta": {"description": "Edit menu."},
+  "@optionAsMeta": {
+    "description": "Edit menu."
+  },
   "numLock": "Num Lock",
-  "@numLock": {"description": "Edit menu."},
+  "@numLock": {
+    "description": "Edit menu."
+  },
   "showAllTabs": "Show All Tabs",
-  "@showAllTabs": {"description": "View menu."},
+  "@showAllTabs": {
+    "description": "View menu."
+  },
   "showTabBar": "Show Tab Bar",
-  "@showTabBar": {"description": "View menu."},
+  "@showTabBar": {
+    "description": "View menu."
+  },
   "hideMarks": "Hide Marks",
-  "@hideMarks": {"description": "View menu."},
+  "@hideMarks": {
+    "description": "View menu."
+  },
   "showAlternateScreen": "Show Alternate Screen",
-  "@showAlternateScreen": {"description": "View menu."},
+  "@showAlternateScreen": {
+    "description": "View menu."
+  },
   "hideAlternateScreen": "Hide Alternate Screen",
-  "@hideAlternateScreen": {"description": "View menu."},
+  "@hideAlternateScreen": {
+    "description": "View menu."
+  },
   "allowMouseReporting": "Allow Mouse Reporting",
-  "@allowMouseReporting": {"description": "View menu."},
+  "@allowMouseReporting": {
+    "description": "View menu."
+  },
   "splitPane": "Split Pane",
-  "@splitPane": {"description": "View menu."},
+  "@splitPane": {
+    "description": "View menu."
+  },
   "closeSplitPane": "Close Split Pane",
-  "@closeSplitPane": {"description": "View menu."},
+  "@closeSplitPane": {
+    "description": "View menu."
+  },
   "defaultFontSize": "Default Font Size",
-  "@defaultFontSize": {"description": "View menu."},
+  "@defaultFontSize": {
+    "description": "View menu."
+  },
   "fontBigger": "Bigger",
-  "@fontBigger": {"description": "View menu."},
+  "@fontBigger": {
+    "description": "View menu."
+  },
   "fontSmaller": "Smaller",
-  "@fontSmaller": {"description": "View menu."},
+  "@fontSmaller": {
+    "description": "View menu."
+  },
   "scrollToTop": "Scroll to Top",
-  "@scrollToTop": {"description": "View menu."},
+  "@scrollToTop": {
+    "description": "View menu."
+  },
   "scrollToBottom": "Scroll to Bottom",
-  "@scrollToBottom": {"description": "View menu."},
+  "@scrollToBottom": {
+    "description": "View menu."
+  },
   "pageUp": "Page Up",
-  "@pageUp": {"description": "View menu: scrolls one page up."},
+  "@pageUp": {
+    "description": "View menu: scrolls one page up."
+  },
   "pageDown": "Page Down",
-  "@pageDown": {"description": "View menu: scrolls one page down."},
+  "@pageDown": {
+    "description": "View menu: scrolls one page down."
+  },
   "lineUp": "Line Up",
-  "@lineUp": {"description": "View menu: scrolls one line up."},
+  "@lineUp": {
+    "description": "View menu: scrolls one line up."
+  },
   "lineDown": "Line Down",
-  "@lineDown": {"description": "View menu: scrolls one line down."},
+  "@lineDown": {
+    "description": "View menu: scrolls one line down."
+  },
   "showPreviousTab": "Show Previous Tab",
-  "@showPreviousTab": {"description": "Window menu."},
+  "@showPreviousTab": {
+    "description": "Window menu."
+  },
   "showNextTab": "Show Next Tab",
-  "@showNextTab": {"description": "Window menu."},
+  "@showNextTab": {
+    "description": "Window menu."
+  },
   "moveTabToNewWindow": "Move Tab to New Window",
-  "@moveTabToNewWindow": {"description": "Window menu."},
+  "@moveTabToNewWindow": {
+    "description": "Window menu."
+  },
   "mergeAllWindows": "Merge All Windows",
-  "@mergeAllWindows": {"description": "Window menu."},
+  "@mergeAllWindows": {
+    "description": "Window menu."
+  },
   "openWindowGroup": "Open Window Group",
-  "@openWindowGroup": {"description": "Window menu: submenu."},
+  "@openWindowGroup": {
+    "description": "Window menu: submenu."
+  },
   "noWindowGroups": "No Window Groups",
-  "@noWindowGroups": {"description": "Window menu."},
+  "@noWindowGroups": {
+    "description": "Window menu."
+  },
   "saveWindowsAsGroup": "Save Windows as Group…",
-  "@saveWindowsAsGroup": {"description": "Window menu."},
+  "@saveWindowsAsGroup": {
+    "description": "Window menu."
+  },
   "openManPage": "Open man Page for Selection",
-  "@openManPage": {"description": "Help menu."},
+  "@openManPage": {
+    "description": "Help menu."
+  },
   "searchManIndex": "Search man Page Index for Selection",
-  "@searchManIndex": {"description": "Help menu."}
+  "@searchManIndex": {
+    "description": "Help menu."
+  },
+  "aboutMessage": "Version {version}. The terminal of Silica. Free software under the MIT and Apache 2.0 licenses.",
+  "@aboutMessage": {
+    "description": "Body of the About alert.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "askAlways": "Always",
+  "@askAlways": {
+    "description": "Option of \"Ask before closing\": always ask."
+  },
+  "askNever": "Never",
+  "@askNever": {
+    "description": "Option of \"Ask before closing\": never ask."
+  },
+  "askRunning": "Only if there are processes other than the login shell",
+  "@askRunning": {
+    "description": "Option of \"Ask before closing\": ask only when a program runs in the tab."
+  },
+  "bellNotification": "{title} rang the bell.",
+  "@bellNotification": {
+    "description": "Desktop notification when a background tab rings the terminal bell.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "commandPlaceholder": "Command",
+  "@commandPlaceholder": {
+    "description": "Placeholder of the field of New Command."
+  },
+  "connect": "Connect",
+  "@connect": {
+    "description": "Button of the New Remote Connection alert."
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Context menu item that copies the selection."
+  },
+  "paste": "Paste",
+  "@paste": {
+    "description": "Context menu item that pastes the clipboard."
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Context menu item that selects all the text."
+  },
+  "cursorBar": "Bar",
+  "@cursorBar": {
+    "description": "Cursor shape: a vertical bar."
+  },
+  "cursorBlock": "Block",
+  "@cursorBlock": {
+    "description": "Cursor shape: the whole cell."
+  },
+  "cursorUnderline": "Underline",
+  "@cursorUnderline": {
+    "description": "Cursor shape: a line under the cell."
+  },
+  "editTitleMessage": "The title replaces the one the program sets, for this tab.",
+  "@editTitleMessage": {
+    "description": "Explanation in the Edit Title alert."
+  },
+  "exitClose": "Close the window",
+  "@exitClose": {
+    "description": "Option \"when the shell exits\": close the window or tab."
+  },
+  "exitCloseIfClean": "Close if the shell exited cleanly",
+  "@exitCloseIfClean": {
+    "description": "Option \"when the shell exits\"."
+  },
+  "exitKeep": "Don't close",
+  "@exitKeep": {
+    "description": "Option \"when the shell exits\": keep the window."
+  },
+  "groupNamePlaceholder": "Group name",
+  "@groupNamePlaceholder": {
+    "description": "Placeholder of the name of a window group."
+  },
+  "hideTabBar": "Hide Tab Bar",
+  "@hideTabBar": {
+    "description": "View menu item that hides the tab bar."
+  },
+  "inspectorCommand": "Command",
+  "@inspectorCommand": {
+    "description": "Inspector: the program of the tab."
+  },
+  "inspectorDirectory": "Directory",
+  "@inspectorDirectory": {
+    "description": "Inspector: the working directory."
+  },
+  "inspectorLoginShell": "The login shell",
+  "@inspectorLoginShell": {
+    "description": "Inspector: no command, the login shell runs."
+  },
+  "inspectorNotStarted": "Not running",
+  "@inspectorNotStarted": {
+    "description": "Inspector: the tab has no process."
+  },
+  "inspectorProfile": "Profile",
+  "@inspectorProfile": {
+    "description": "Inspector: the profile of the tab."
+  },
+  "inspectorRunning": "Running",
+  "@inspectorRunning": {
+    "description": "Inspector: the process runs."
+  },
+  "inspectorSize": "Size",
+  "@inspectorSize": {
+    "description": "Inspector: columns and rows."
+  },
+  "inspectorStatus": "Status",
+  "@inspectorStatus": {
+    "description": "Inspector: whether the process runs or how it ended."
+  },
+  "inspectorTitle": "Inspector",
+  "@inspectorTitle": {
+    "description": "Title of the inspector window."
+  },
+  "inspectorTitleRow": "Title",
+  "@inspectorTitleRow": {
+    "description": "Inspector: the title of the tab."
+  },
+  "inspectorUnknown": "Unknown",
+  "@inspectorUnknown": {
+    "description": "Inspector: the directory is not known."
+  },
+  "newCommandMessage": "The command runs in a new window.",
+  "@newCommandMessage": {
+    "description": "Explanation in the New Command alert."
+  },
+  "newRemoteMessage": "A host, user@host or a ssh:// address. The connection opens in a new window.",
+  "@newRemoteMessage": {
+    "description": "Explanation in the New Remote Connection alert."
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "Button that confirms an alert."
+  },
+  "profileAdvanced": "Advanced",
+  "@profileAdvanced": {
+    "description": "Tab of the profile settings."
+  },
+  "profileAskBeforeClosing": "Ask before closing",
+  "@profileAskBeforeClosing": {
+    "description": "Profile setting."
+  },
+  "profileBell": "Bell",
+  "@profileBell": {
+    "description": "Heading of the bell settings."
+  },
+  "profileBellNotify": "Notify when a background tab rings the bell",
+  "@profileBellNotify": {
+    "description": "Profile setting."
+  },
+  "profileBellVisual": "Flash the window for the bell",
+  "@profileBellVisual": {
+    "description": "Profile setting."
+  },
+  "profileBoldText": "Use the bold face for bold text",
+  "@profileBoldText": {
+    "description": "Profile setting."
+  },
+  "profileColumns": "Columns",
+  "@profileColumns": {
+    "description": "Profile setting: the width of new windows in characters."
+  },
+  "profileCursor": "Cursor",
+  "@profileCursor": {
+    "description": "Profile setting."
+  },
+  "profileCursorBlink": "Blink the cursor",
+  "@profileCursorBlink": {
+    "description": "Profile setting."
+  },
+  "profileFont": "Font",
+  "@profileFont": {
+    "description": "Profile setting: the name of a monospaced font."
+  },
+  "profileFontSize": "Font size",
+  "@profileFontSize": {
+    "description": "Profile setting."
+  },
+  "profileKeyboard": "Keyboard",
+  "@profileKeyboard": {
+    "description": "Tab of the profile settings."
+  },
+  "profileName": "Name",
+  "@profileName": {
+    "description": "Profile setting."
+  },
+  "profileOptionNote": "Option sends Escape before the key, as programs such as Emacs and readline expect.",
+  "@profileOptionNote": {
+    "description": "Explanation of Use Option as Meta Key."
+  },
+  "profileRows": "Rows",
+  "@profileRows": {
+    "description": "Profile setting: the height of new windows in lines."
+  },
+  "profileScheme": "Colors",
+  "@profileScheme": {
+    "description": "Profile setting: the color scheme."
+  },
+  "profileScrollback": "Scrollback",
+  "@profileScrollback": {
+    "description": "Heading of the scrollback settings."
+  },
+  "profileScrollbackKeep": "Keep",
+  "@profileScrollbackKeep": {
+    "description": "Profile setting: limited or unlimited scrollback."
+  },
+  "profileScrollbackLines": "Lines",
+  "@profileScrollbackLines": {
+    "description": "Profile setting: how many lines of scrollback."
+  },
+  "profileShell": "Shell",
+  "@profileShell": {
+    "description": "Tab of the profile settings."
+  },
+  "profileShowMarks": "Show prompt marks",
+  "@profileShowMarks": {
+    "description": "Profile setting."
+  },
+  "profileStartup": "Run at start",
+  "@profileStartup": {
+    "description": "Profile setting: a command typed into the shell when it starts."
+  },
+  "profileStartupPlaceholder": "A command",
+  "@profileStartupPlaceholder": {
+    "description": "Placeholder of that field."
+  },
+  "profileTab": "Tab",
+  "@profileTab": {
+    "description": "Tab of the profile settings."
+  },
+  "profileText": "Text",
+  "@profileText": {
+    "description": "Tab of the profile settings."
+  },
+  "profileTitleDirectory": "Show the directory in the title",
+  "@profileTitleDirectory": {
+    "description": "Profile setting."
+  },
+  "profileTitleSize": "Show the size in the window title",
+  "@profileTitleSize": {
+    "description": "Profile setting."
+  },
+  "profileWhenExits": "When the shell exits",
+  "@profileWhenExits": {
+    "description": "Profile setting."
+  },
+  "profileWindow": "Window",
+  "@profileWindow": {
+    "description": "Tab of the profile settings."
+  },
+  "run": "Run",
+  "@run": {
+    "description": "Button of the New Command alert."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Button of the Save Windows as Group alert."
+  },
+  "saveGroupMessage": "The open windows and their tabs are saved under this name.",
+  "@saveGroupMessage": {
+    "description": "Explanation in the Save Windows as Group alert."
+  },
+  "schemeDefault": "Default (follows the appearance)",
+  "@schemeDefault": {
+    "description": "Color scheme that follows the light or dark appearance."
+  },
+  "scrollbackLimited": "Limited",
+  "@scrollbackLimited": {
+    "description": "Scrollback: a number of lines."
+  },
+  "scrollbackUnlimited": "Unlimited",
+  "@scrollbackUnlimited": {
+    "description": "Scrollback: as many lines as fit in memory."
+  },
+  "serverPlaceholder": "Server",
+  "@serverPlaceholder": {
+    "description": "Placeholder of the field of New Remote Connection."
+  },
+  "settingsAutoMark": "Mark prompts automatically",
+  "@settingsAutoMark": {
+    "description": "General setting."
+  },
+  "settingsClipboard": "Clipboard",
+  "@settingsClipboard": {
+    "description": "Heading of the clipboard settings."
+  },
+  "settingsClipboardNote": "Programs ask with the OSC 52 escape sequence. Reading stays off unless you allow it.",
+  "@settingsClipboardNote": {
+    "description": "Explanation of the clipboard settings."
+  },
+  "settingsClipboardRead": "Allow programs to read the clipboard",
+  "@settingsClipboardRead": {
+    "description": "General setting."
+  },
+  "settingsClipboardWrite": "Allow programs to write to the clipboard",
+  "@settingsClipboardWrite": {
+    "description": "General setting."
+  },
+  "settingsCopyName": "{name} copy",
+  "@settingsCopyName": {
+    "description": "Name of a duplicated profile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDefaultMark": "{name} (default)",
+  "@settingsDefaultMark": {
+    "description": "A profile in the list, marked as the default one.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDefaultProfile": "Default profile",
+  "@settingsDefaultProfile": {
+    "description": "General setting."
+  },
+  "settingsDuplicate": "Duplicate",
+  "@settingsDuplicate": {
+    "description": "Button that duplicates the selected profile."
+  },
+  "settingsEncodings": "Encodings",
+  "@settingsEncodings": {
+    "description": "Tab of the settings."
+  },
+  "settingsEncodingsNote": "Terminal speaks Unicode (UTF-8) with programs. Other encodings are not offered.",
+  "@settingsEncodingsNote": {
+    "description": "Content of the Encodings tab."
+  },
+  "settingsGeneral": "General",
+  "@settingsGeneral": {
+    "description": "Tab of the settings."
+  },
+  "settingsGroupSummary": "{name} — {count, plural, =1{1 window} other{{count} windows}}",
+  "@settingsGroupSummary": {
+    "description": "A saved window group in the list.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHome": "The home folder",
+  "@settingsHome": {
+    "description": "Where new windows or tabs start."
+  },
+  "settingsMouseReporting": "Report mouse events to programs that ask for them",
+  "@settingsMouseReporting": {
+    "description": "General setting."
+  },
+  "settingsNewTabs": "New tabs open in",
+  "@settingsNewTabs": {
+    "description": "General setting."
+  },
+  "settingsNewWindows": "New windows open in",
+  "@settingsNewWindows": {
+    "description": "General setting."
+  },
+  "settingsNoGroups": "No window groups yet. Use Window › Save Windows as Group to make one.",
+  "@settingsNoGroups": {
+    "description": "Shown in the Window Groups tab when there are none."
+  },
+  "settingsOpenLinks": "Command-click opens links",
+  "@settingsOpenLinks": {
+    "description": "General setting."
+  },
+  "settingsProfiles": "Profiles",
+  "@settingsProfiles": {
+    "description": "Tab of the settings."
+  },
+  "settingsRemove": "Remove",
+  "@settingsRemove": {
+    "description": "Button that removes a profile or a window group."
+  },
+  "settingsSameDirectory": "The folder of the current tab",
+  "@settingsSameDirectory": {
+    "description": "Where new windows or tabs start."
+  },
+  "settingsTitle": "Terminal Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings window."
+  },
+  "settingsWindowGroups": "Window Groups",
+  "@settingsWindowGroups": {
+    "description": "Tab of the settings."
+  },
+  "showMarks": "Show Marks",
+  "@showMarks": {
+    "description": "View menu item that shows the prompt marks."
+  }
 }

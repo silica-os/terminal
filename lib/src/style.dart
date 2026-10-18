@@ -4,7 +4,6 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
-import 'package:xterm/xterm.dart';
 
 /// The title band at the top (kit `Titlebars/Bar/Title Only`, 32 pt): the compositor draws the
 /// window controls in it, the app the centred title.
@@ -61,12 +60,32 @@ const Size cellSize = Size(7.2, 16);
 const double terminalFontSize = 12;
 
 /// The terminal font: JetBrains Mono NL (OFL 1.1, bundled).
-const TerminalStyle terminalStyle = TerminalStyle(
-  fontFamily: 'JetBrains Mono',
-  fontSize: terminalFontSize,
-  height: 16 / terminalFontSize,
-  fontFamilyFallback: ['Noto Sans Mono', 'DejaVu Sans Mono', 'monospace'],
+const String terminalFontFamily = 'JetBrains Mono';
+const List<String> terminalFontFallback = [
+  'Noto Sans Mono',
+  'DejaVu Sans Mono',
+  'monospace',
+];
+
+/// The text style of the grid at `size` points: the cell is 0.6 em wide and 4/3 em tall.
+TextStyle terminalTextStyle(
+  double size, {
+  String family = terminalFontFamily,
+}) => TextStyle(
+  fontFamily: family,
+  fontFamilyFallback: terminalFontFallback,
+  fontSize: size,
+  height: cellHeightFor(size) / size,
 );
+
+/// The cell for a font size (the face advances 0.6 em; the line is 16 pt at 12 pt).
+double cellWidthFor(double size) => size * 0.6;
+double cellHeightFor(double size) => size * 16 / 12;
+
+/// The font sizes Bigger and Smaller step through; the first and last are the limits.
+const List<double> fontSizeSteps = [
+  8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 40, 48, //
+];
 
 /// The default window: 80 × 24 cells.
 const int defaultColumns = 80;
@@ -173,34 +192,25 @@ class GridColors {
   final List<Color> normal;
   final List<Color> bright;
 
-  TerminalTheme theme({
-    required Color selection,
-    Color searchHit = const Color(0xFFC8C8C8),
-  }) => TerminalTheme(
-    cursor: cursor,
-    selection: selection,
-    foreground: foreground,
-    background: background,
-    black: normal[0],
-    red: normal[1],
-    green: normal[2],
-    yellow: normal[3],
-    blue: normal[4],
-    magenta: normal[5],
-    cyan: normal[6],
-    white: normal[7],
-    brightBlack: bright[0],
-    brightRed: bright[1],
-    brightGreen: bright[2],
-    brightYellow: bright[3],
-    brightBlue: bright[4],
-    brightMagenta: bright[5],
-    brightCyan: bright[6],
-    brightWhite: bright[7],
-    searchHitBackground: searchHit,
-    searchHitBackgroundCurrent: selection,
-    searchHitForeground: foreground,
-  );
+  /// Entry `i` of the 256-colour palette: the profile's 16 ANSI colours, then the xterm
+  /// 6 × 6 × 6 cube and the 24 greys.
+  Color indexed(int i) {
+    if (i < 0) return foreground;
+    if (i < 8) return normal[i];
+    if (i < 16) return bright[i - 8];
+    if (i < 232) {
+      final n = i - 16;
+      int level(int v) => v == 0 ? 0 : 55 + v * 40;
+      return Color.fromARGB(
+        0xff,
+        level(n ~/ 36),
+        level(n ~/ 6 % 6),
+        level(n % 6),
+      );
+    }
+    final v = (8 + (i - 232) * 10).clamp(0, 255);
+    return Color.fromARGB(0xff, v, v, v);
+  }
 }
 
 List<Color> _hex(List<int> values) => [for (final v in values) Color(v)];
@@ -336,11 +346,9 @@ class Profile {
   /// `App/Terminal/Find Match`.
   final Color findMatch;
 
-  /// The grid theme for an active or inactive window.
-  TerminalTheme theme({required bool active}) => grid.theme(
-    selection: active ? grid.selection : inactiveSelection,
-    searchHit: findMatch,
-  );
+  /// The selection colour of an active or inactive window.
+  Color selectionColor({required bool active}) =>
+      active ? grid.selection : inactiveSelection;
 }
 
 /// The profile for the appearance in effect.

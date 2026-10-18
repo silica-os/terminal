@@ -817,6 +817,570 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search man Page Index for Selection'**
   String get searchManIndex;
+
+  /// Body of the About alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}. The terminal of Silica. Free software under the MIT and Apache 2.0 licenses.'**
+  String aboutMessage(String version);
+
+  /// Option of "Ask before closing": always ask.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get askAlways;
+
+  /// Option of "Ask before closing": never ask.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get askNever;
+
+  /// Option of "Ask before closing": ask only when a program runs in the tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Only if there are processes other than the login shell'**
+  String get askRunning;
+
+  /// Desktop notification when a background tab rings the terminal bell.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} rang the bell.'**
+  String bellNotification(String title);
+
+  /// Placeholder of the field of New Command.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get commandPlaceholder;
+
+  /// Button of the New Remote Connection alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connect;
+
+  /// Context menu item that copies the selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// Context menu item that pastes the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get paste;
+
+  /// Context menu item that selects all the text.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get selectAll;
+
+  /// Cursor shape: a vertical bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar'**
+  String get cursorBar;
+
+  /// Cursor shape: the whole cell.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get cursorBlock;
+
+  /// Cursor shape: a line under the cell.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get cursorUnderline;
+
+  /// Explanation in the Edit Title alert.
+  ///
+  /// In en, this message translates to:
+  /// **'The title replaces the one the program sets, for this tab.'**
+  String get editTitleMessage;
+
+  /// Option "when the shell exits": close the window or tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the window'**
+  String get exitClose;
+
+  /// Option "when the shell exits".
+  ///
+  /// In en, this message translates to:
+  /// **'Close if the shell exited cleanly'**
+  String get exitCloseIfClean;
+
+  /// Option "when the shell exits": keep the window.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t close'**
+  String get exitKeep;
+
+  /// Placeholder of the name of a window group.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get groupNamePlaceholder;
+
+  /// View menu item that hides the tab bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Tab Bar'**
+  String get hideTabBar;
+
+  /// Inspector: the program of the tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get inspectorCommand;
+
+  /// Inspector: the working directory.
+  ///
+  /// In en, this message translates to:
+  /// **'Directory'**
+  String get inspectorDirectory;
+
+  /// Inspector: no command, the login shell runs.
+  ///
+  /// In en, this message translates to:
+  /// **'The login shell'**
+  String get inspectorLoginShell;
+
+  /// Inspector: the tab has no process.
+  ///
+  /// In en, this message translates to:
+  /// **'Not running'**
+  String get inspectorNotStarted;
+
+  /// Inspector: the profile of the tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get inspectorProfile;
+
+  /// Inspector: the process runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get inspectorRunning;
+
+  /// Inspector: columns and rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get inspectorSize;
+
+  /// Inspector: whether the process runs or how it ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get inspectorStatus;
+
+  /// Title of the inspector window.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspector'**
+  String get inspectorTitle;
+
+  /// Inspector: the title of the tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get inspectorTitleRow;
+
+  /// Inspector: the directory is not known.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get inspectorUnknown;
+
+  /// Explanation in the New Command alert.
+  ///
+  /// In en, this message translates to:
+  /// **'The command runs in a new window.'**
+  String get newCommandMessage;
+
+  /// Explanation in the New Remote Connection alert.
+  ///
+  /// In en, this message translates to:
+  /// **'A host, user@host or a ssh:// address. The connection opens in a new window.'**
+  String get newRemoteMessage;
+
+  /// Button that confirms an alert.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// Tab of the profile settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get profileAdvanced;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask before closing'**
+  String get profileAskBeforeClosing;
+
+  /// Heading of the bell settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Bell'**
+  String get profileBell;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify when a background tab rings the bell'**
+  String get profileBellNotify;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash the window for the bell'**
+  String get profileBellVisual;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the bold face for bold text'**
+  String get profileBoldText;
+
+  /// Profile setting: the width of new windows in characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get profileColumns;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Cursor'**
+  String get profileCursor;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Blink the cursor'**
+  String get profileCursorBlink;
+
+  /// Profile setting: the name of a monospaced font.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get profileFont;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Font size'**
+  String get profileFontSize;
+
+  /// Tab of the profile settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard'**
+  String get profileKeyboard;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get profileName;
+
+  /// Explanation of Use Option as Meta Key.
+  ///
+  /// In en, this message translates to:
+  /// **'Option sends Escape before the key, as programs such as Emacs and readline expect.'**
+  String get profileOptionNote;
+
+  /// Profile setting: the height of new windows in lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows'**
+  String get profileRows;
+
+  /// Profile setting: the color scheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors'**
+  String get profileScheme;
+
+  /// Heading of the scrollback settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrollback'**
+  String get profileScrollback;
+
+  /// Profile setting: limited or unlimited scrollback.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get profileScrollbackKeep;
+
+  /// Profile setting: how many lines of scrollback.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines'**
+  String get profileScrollbackLines;
+
+  /// Tab of the profile settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell'**
+  String get profileShell;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show prompt marks'**
+  String get profileShowMarks;
+
+  /// Profile setting: a command typed into the shell when it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Run at start'**
+  String get profileStartup;
+
+  /// Placeholder of that field.
+  ///
+  /// In en, this message translates to:
+  /// **'A command'**
+  String get profileStartupPlaceholder;
+
+  /// Tab of the profile settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab'**
+  String get profileTab;
+
+  /// Tab of the profile settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get profileText;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the directory in the title'**
+  String get profileTitleDirectory;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the size in the window title'**
+  String get profileTitleSize;
+
+  /// Profile setting.
+  ///
+  /// In en, this message translates to:
+  /// **'When the shell exits'**
+  String get profileWhenExits;
+
+  /// Tab of the profile settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Window'**
+  String get profileWindow;
+
+  /// Button of the New Command alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get run;
+
+  /// Button of the Save Windows as Group alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// Explanation in the Save Windows as Group alert.
+  ///
+  /// In en, this message translates to:
+  /// **'The open windows and their tabs are saved under this name.'**
+  String get saveGroupMessage;
+
+  /// Color scheme that follows the light or dark appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Default (follows the appearance)'**
+  String get schemeDefault;
+
+  /// Scrollback: a number of lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited'**
+  String get scrollbackLimited;
+
+  /// Scrollback: as many lines as fit in memory.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get scrollbackUnlimited;
+
+  /// Placeholder of the field of New Remote Connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get serverPlaceholder;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark prompts automatically'**
+  String get settingsAutoMark;
+
+  /// Heading of the clipboard settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard'**
+  String get settingsClipboard;
+
+  /// Explanation of the clipboard settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Programs ask with the OSC 52 escape sequence. Reading stays off unless you allow it.'**
+  String get settingsClipboardNote;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow programs to read the clipboard'**
+  String get settingsClipboardRead;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow programs to write to the clipboard'**
+  String get settingsClipboardWrite;
+
+  /// Name of a duplicated profile.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} copy'**
+  String settingsCopyName(String name);
+
+  /// A profile in the list, marked as the default one.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (default)'**
+  String settingsDefaultMark(String name);
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Default profile'**
+  String get settingsDefaultProfile;
+
+  /// Button that duplicates the selected profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get settingsDuplicate;
+
+  /// Tab of the settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Encodings'**
+  String get settingsEncodings;
+
+  /// Content of the Encodings tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal speaks Unicode (UTF-8) with programs. Other encodings are not offered.'**
+  String get settingsEncodingsNote;
+
+  /// Tab of the settings.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsGeneral;
+
+  /// A saved window group in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} — {count, plural, =1{1 window} other{{count} windows}}'**
+  String settingsGroupSummary(String name, int count);
+
+  /// Where new windows or tabs start.
+  ///
+  /// In en, this message translates to:
+  /// **'The home folder'**
+  String get settingsHome;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Report mouse events to programs that ask for them'**
+  String get settingsMouseReporting;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'New tabs open in'**
+  String get settingsNewTabs;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'New windows open in'**
+  String get settingsNewWindows;
+
+  /// Shown in the Window Groups tab when there are none.
+  ///
+  /// In en, this message translates to:
+  /// **'No window groups yet. Use Window › Save Windows as Group to make one.'**
+  String get settingsNoGroups;
+
+  /// General setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Command-click opens links'**
+  String get settingsOpenLinks;
+
+  /// Tab of the settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles'**
+  String get settingsProfiles;
+
+  /// Button that removes a profile or a window group.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get settingsRemove;
+
+  /// Where new windows or tabs start.
+  ///
+  /// In en, this message translates to:
+  /// **'The folder of the current tab'**
+  String get settingsSameDirectory;
+
+  /// Title of the settings window.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal Settings'**
+  String get settingsTitle;
+
+  /// Tab of the settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Window Groups'**
+  String get settingsWindowGroups;
+
+  /// View menu item that shows the prompt marks.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Marks'**
+  String get showMarks;
 }
 
 class _AppLocalizationsDelegate

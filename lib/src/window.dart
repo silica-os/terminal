@@ -14,13 +14,17 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
-import 'package:xterm/xterm.dart';
 
+import 'app.dart';
+import 'grid.dart';
+import 'inspector.dart';
 import 'l10n.dart';
-import 'pty.dart';
-import 'search.dart';
+import 'links.dart';
 import 'session.dart';
+import 'settings.dart';
+import 'settings_window.dart';
 import 'style.dart';
+import 'terminal_view.dart';
 
 class _StepTabIntent extends Intent {
   const _StepTabIntent(this.by);
@@ -36,69 +40,104 @@ const Map<ShortcutActivator, Intent> windowShortcuts = {
       _StepTabIntent(-1),
 };
 
-/// Copy and paste with Ctrl+Shift inside the grid (plain Ctrl+C and Ctrl+V belong to the
-/// programs); with the Logo key they are the menu bar's.
-final Map<ShortcutActivator, Intent> gridShortcuts = {
-  const SingleActivator(LogicalKeyboardKey.keyC, control: true, shift: true):
-      CopySelectionTextIntent.copy,
-  const SingleActivator(LogicalKeyboardKey.keyV, control: true, shift: true):
-      const PasteTextIntent(SelectionChangedCause.keyboard),
-};
-
 class TerminalWindow extends StatefulWidget {
   const TerminalWindow({
     super.key,
-    required this.pty,
-    this.command,
-    this.cwd,
-    this.shellName,
+    required this.app,
+    this.seed = const WindowSeed(),
     this.onLastTabClosed,
+    this.onTitle,
   });
 
-  final PtyBackend pty;
+  final TerminalApp app;
 
-  /// The program of every tab; null: the user's login shell.
-  final List<String>? command;
-  final String? cwd;
-  final String? shellName;
+  /// What the window opens with: a profile, a command, a directory, or tabs moved here.
+  final WindowSeed seed;
 
   /// The last tab was closed (the app closes its window).
   final VoidCallback? onLastTabClosed;
+
+  /// The window title changed (windows other than the main one set it themselves).
+  final void Function(String title)? onTitle;
 
   @override
   State<TerminalWindow> createState() => TerminalWindowState();
 }
 
+/// A tab: its session and what the view shows besides the rows.
+class _Tab {
+  _Tab(this.session) : decor = GridDecor();
+  final TerminalSession session;
+  final GridDecor decor;
+  final FocusNode focus = FocusNode(debugLabel: 'grid');
+
+  /// A bell rang while the tab was in the background.
+  bool belled = false;
+
+  /// The tab title set by the user (Edit Title); null: the program's.
+  String? customTitle;
+  VoidCallback? bellListener;
+
+  void dispose() {
+    decor.dispose();
+    focus.dispose();
+  }
+}
+
 /// A tab in the bar: its session and how far in it is (0 → 1 entering, 1 → 0 closing).
 class _TabSlot {
-  _TabSlot(this.session, this.presence);
-  final TerminalSession session;
+  _TabSlot(this.tab, this.presence);
+  final _Tab tab;
   final AnimationController presence;
   bool closing = false;
 }
 
+/// A question the window asks with a text field (New Command, Edit Title…).
+class _Prompt {
+  _Prompt({
+    required this.title,
+    required this.message,
+    required this.confirm,
+    required this.onSubmit,
+    this.placeholder,
+    String initial = '',
+  }) : controller = TextEditingController(text: initial);
+  final String title;
+  final String message;
+  final String confirm;
+  final String? placeholder;
+  final TextEditingController controller;
+  final void Function(String text) onSubmit;
+}
+
 class TerminalWindowState extends State<TerminalWindow>
     with TickerProviderStateMixin {
-  final List<TerminalSession> _tabs = [];
+  final List<_Tab> _tabs = [];
   int _current = 0;
 
   /// The tabs drawn in the bar, closing ones included until they have shrunk away.
   final List<_TabSlot> _slots = [];
-  final ScrollController _scroll = ScrollController();
 
   bool _finding = false;
   final TextEditingController _query = TextEditingController();
   late final FocusNode _queryFocus = FocusNode(onKeyEvent: _findKey);
-  final FocusNode _gridFocus = FocusNode();
-  List<SearchMatch> _matches = const [];
+  List<FindMatch> _matches = const [];
   int _match = 0;
+  Timer? _refind;
 
   /// The tab waiting for the answer of the "terminate running processes?" alert.
-  TerminalSession? _confirming;
+  _Tab? _confirming;
 
   /// The answer to the same alert asked for the whole window (its close button, Logo+W).
   Completer<bool>? _confirmingWindow;
-  SearchHighlights? _highlights;
+  _Prompt? _prompt;
+  bool _showTabBar = true;
+
+  /// The font size set with Bigger and Smaller; null: the profile's.
+  double? _fontSize;
+
+  TerminalApp get _app => widget.app;
+  TerminalSettings get _settings => _app.settings;
 
   bool _windowActive = _isActive(WidgetsBinding.instance.lifecycleState);
   late final AppLifecycleListener _lifecycle = AppLifecycleListener(
@@ -106,60 +145,178 @@ class TerminalWindowState extends State<TerminalWindow>
       final active = _isActive(state);
       if (active == _windowActive) return;
       setState(() => _windowActive = active);
-      // An inactive window shows a hollow cursor (the grid without focus) and a grey selection.
-      if (!active) {
-        _gridFocus.unfocus();
-      } else if (!_finding) {
-        _gridFocus.requestFocus();
+      if (_tabs.isNotEmpty) _tab.decor.update(active: active);
+      // An inactive window shows a hollow cursor and a grey selection.
+      if (active) {
+        _app.active = this;
+        if (!_finding && _prompt == null) _tab.focus.requestFocus();
       }
     },
   );
+
+  StreamSubscription<SilicaDragEvent>? _drops;
 
   static bool _isActive(AppLifecycleState? state) =>
       state == null || state == AppLifecycleState.resumed;
 
   /// The tabs, in order (tests).
-  List<TerminalSession> get tabs => List.unmodifiable(_tabs);
+  List<TerminalSession> get tabs => [for (final t in _tabs) t.session];
   int get current => _current;
-  TerminalSession get session => _tabs[_current];
+  TerminalSession get session => _tabs[_current].session;
+  _Tab get _tab => _tabs[_current];
+
+  /// The decoration of the current tab's view (tests).
+  GridDecor get decor => _tab.decor;
+
+  /// The font size in effect.
+  double get fontSize => _fontSize ?? _profile.fontSize;
+
+  /// The profile of the current tab.
+  TerminalProfile get _profile =>
+      _tabs.isEmpty ? _settings.defaultProfile : session.profile;
+
+  /// The id of this window's view, if it is built.
+  int? get viewIdOrNull => mounted ? View.maybeOf(context)?.viewId : null;
 
   @override
   void initState() {
     super.initState();
     _lifecycle;
+    _app.windows.add(this);
+    _app.active ??= this;
+    _settings.addListener(_settingsChanged);
+    PrimarySelection.listenable.addListener(_changed);
     SilicaWindows.onMainCloseRequested = requestCloseWindow;
-    newTab();
+    _drops = SilicaDrag.events.listen(_drag);
+    if (widget.seed.sessions.isNotEmpty) {
+      for (final s in widget.seed.sessions) {
+        adopt(s);
+      }
+    } else {
+      _openTab(
+        profile: widget.seed.profile,
+        command: widget.seed.command,
+        cwd: widget.seed.cwd ?? _app.cwd,
+        animate: false,
+      );
+    }
   }
 
   @override
   void dispose() {
+    _app.windows.remove(this);
+    if (_app.active == this) {
+      _app.active = _app.windows.isEmpty ? null : _app.windows.first;
+    }
+    _settings.removeListener(_settingsChanged);
+    PrimarySelection.listenable.removeListener(_changed);
     if (SilicaWindows.onMainCloseRequested == requestCloseWindow) {
       SilicaWindows.onMainCloseRequested = null;
     }
+    _drops?.cancel();
+    _refind?.cancel();
     _lifecycle.dispose();
-    _highlights?.clear();
     for (final tab in _tabs) {
+      _detach(tab);
+      tab.session.dispose();
       tab.dispose();
     }
     for (final slot in _slots) {
       slot.presence.dispose();
     }
-    _scroll.dispose();
     _query.dispose();
     _queryFocus.dispose();
-    _gridFocus.dispose();
+    _prompt?.controller.dispose();
     super.dispose();
   }
 
-  /// Opens a new tab after the current one and makes it current.
-  void newTab() {
-    final session = TerminalSession(
-      pty: widget.pty,
-      command: widget.command,
-      cwd: widget.cwd,
-      shellName: widget.shellName,
-    )..addListener(_changed);
-    session.controller.addListener(_selectionChanged);
+  void _settingsChanged() {
+    if (!mounted) return;
+    // A profile changed in the settings reaches the tabs that use it.
+    for (final tab in _tabs) {
+      final fresh = _settings.profileById(tab.session.profile.id);
+      if (fresh != null && fresh != tab.session.profile) {
+        tab.session.apply(fresh);
+      }
+      tab.session.allowClipboard(
+        write: _settings.clipboardWrite,
+        read: _settings.clipboardRead,
+      );
+    }
+    setState(() {});
+  }
+
+  // ---- tabs -------------------------------------------------------------------------
+
+  /// Opens a new tab after the current one and makes it current: with [profile] (the
+  /// default one otherwise), in the directory of the current tab if the settings say so.
+  Future<void> newTab({
+    TerminalProfile? profile,
+    List<String>? command,
+    String? cwd,
+  }) async {
+    var directory = cwd;
+    if (directory == null &&
+        _tabs.isNotEmpty &&
+        _settings.newTabDirectory == NewDirectory.sameAsCurrent) {
+      directory = session.grid.cwd;
+      if (directory == null && session.started && !session.ended) {
+        final current = session;
+        directory = await current.workingDirectory();
+        if (!mounted) return;
+      }
+    }
+    _openTab(
+      profile: profile ?? (_tabs.isEmpty ? null : _profileForNewTab()),
+      command: command ?? _app.command,
+      cwd: directory ?? _app.cwd,
+    );
+  }
+
+  /// A new tab uses the profile of the current one (the settings: same profile).
+  TerminalProfile _profileForNewTab() =>
+      _settings.profileById(session.profile.id) ?? _settings.defaultProfile;
+
+  TerminalSession _makeSession({
+    TerminalProfile? profile,
+    List<String>? command,
+    String? cwd,
+  }) => TerminalSession(
+    pty: _app.pty,
+    command: command,
+    cwd: cwd,
+    shellName: command?.first.split('/').last ?? _app.shellName,
+    profile: profile ?? _settings.defaultProfile,
+    clipboardWrite: _settings.clipboardWrite,
+    clipboardRead: _settings.clipboardRead,
+    onExit: _exited,
+  );
+
+  void _openTab({
+    TerminalProfile? profile,
+    List<String>? command,
+    String? cwd,
+    bool animate = true,
+  }) {
+    final session = _makeSession(
+      profile: profile,
+      command: command ?? _app.command,
+      cwd: cwd,
+    );
+    _insert(session, animate: animate && _tabs.isNotEmpty);
+  }
+
+  /// Takes a running session into this window (a tab moved here).
+  void adopt(TerminalSession session) {
+    _insert(session, animate: _tabs.isNotEmpty);
+  }
+
+  void _insert(TerminalSession session, {required bool animate}) {
+    final tab = _Tab(session);
+    tab.bellListener = () => _belled(tab);
+    session.grid.bells.addListener(tab.bellListener!);
+    session.addListener(_changed);
+    session.grid.addListener(_gridChanged);
     // The new tab slides in from the right and settles in ~550 ms.
     final presence = AnimationController(
       vsync: this,
@@ -169,37 +326,57 @@ class TerminalWindowState extends State<TerminalWindow>
     setState(() {
       final at = _tabs.isEmpty ? 0 : _current + 1;
       final after = _tabs.isEmpty ? null : _tabs[_current];
-      _tabs.insert(at, session);
+      _tabs.insert(at, tab);
       _current = at;
       final slotAt = after == null
           ? _slots.length
-          : _slots.indexWhere((s) => s.session == after) + 1;
-      _slots.insert(
-        slotAt.clamp(0, _slots.length),
-        _TabSlot(session, presence),
-      );
+          : _slots.indexWhere((s) => s.tab == after) + 1;
+      _slots.insert(slotAt.clamp(0, _slots.length), _TabSlot(tab, presence));
     });
-    if (_slots.length == 1) {
-      presence.value = 1;
-    } else {
+    if (animate) {
       presence.forward();
+    } else {
+      presence.value = 1;
     }
-    // Starts once the grid has its size (the view resizes the emulator on layout).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) session.start();
-    });
+    tab.decor.update(active: _windowActive);
     _endFind();
   }
 
-  /// Closes the current tab (and its process); the last one closes the window.
+  void _detach(_Tab tab) {
+    final listener = tab.bellListener;
+    if (listener != null) tab.session.grid.bells.removeListener(listener);
+    tab.session.removeListener(_changed);
+    tab.session.grid.removeListener(_gridChanged);
+  }
+
+  /// Gives up a tab without ending it (it moves to another window).
+  TerminalSession release(TerminalSession session) {
+    final i = _tabs.indexWhere((t) => t.session == session);
+    if (i < 0) return session;
+    final tab = _tabs.removeAt(i);
+    _detach(tab);
+    for (final slot in _slots.where((s) => s.tab == tab).toList()) {
+      _slots.remove(slot);
+      slot.presence.dispose();
+    }
+    tab.dispose();
+    if (_tabs.isEmpty) {
+      widget.onLastTabClosed?.call();
+    } else {
+      setState(() => _current = _current.clamp(0, _tabs.length - 1));
+    }
+    return session;
+  }
+
+  /// Closes a tab (and its process); the last one closes the window.
   void closeTab([int? index]) {
     final i = index ?? _current;
     if (i < 0 || i >= _tabs.length) return;
-    final session = _tabs.removeAt(i)..removeListener(_changed);
-    session.controller.removeListener(_selectionChanged);
-    session.dispose();
+    final tab = _tabs.removeAt(i);
+    _detach(tab);
+    tab.session.dispose();
     // The closed tab shrinks away in ~500 ms while the others grow.
-    for (final slot in _slots.where((s) => s.session == session).toList()) {
+    for (final slot in _slots.where((s) => s.tab == tab).toList()) {
       slot.closing = true;
       slot.presence.reverse().whenCompleteOrCancel(() {
         if (!mounted) return;
@@ -214,36 +391,63 @@ class TerminalWindowState extends State<TerminalWindow>
     }
     setState(() => _current = _current.clamp(0, _tabs.length - 1));
     _endFind();
+    _tab.belled = false;
   }
 
-  /// Closes a tab like the × and ⌘W do: when a program other than the shell runs in it, asks
-  /// first ("Do you want to terminate running processes in this tab?").
+  /// The shell of a session ended: closes the tab if the profile says so.
+  void _exited(TerminalSession session, SessionExit exit) {
+    final i = _tabs.indexWhere((t) => t.session == session);
+    if (i < 0) return;
+    final close = switch (session.profile.closeOnExit) {
+      CloseOnExit.close => true,
+      CloseOnExit.closeIfClean => exit.clean,
+      CloseOnExit.keep => false,
+    };
+    if (close) closeTab(i);
+  }
+
+  /// Whether closing needs the user's word: per the profile, always, never, or when a
+  /// program other than the shell runs in the tab.
+  Future<bool> _needsAsk(_Tab tab) async {
+    if (tab.session.ended) return false;
+    switch (tab.session.profile.askBeforeClosing) {
+      case AskBeforeClosing.always:
+        return true;
+      case AskBeforeClosing.never:
+        return false;
+      case AskBeforeClosing.running:
+        return tab.session.hasForegroundProcess();
+    }
+  }
+
+  /// Closes a tab like the × and ⌘W do: asks first ("Do you want to terminate running
+  /// processes in this tab?") when the profile says so.
   Future<void> requestCloseTab([int? index]) async {
     final i = index ?? _current;
     if (i < 0 || i >= _tabs.length) return;
     if (_confirming != null || _confirmingWindow != null) return;
-    final session = _tabs[i];
-    if (await session.hasForegroundProcess()) {
-      if (!mounted || !_tabs.contains(session)) return;
-      setState(() => _confirming = session);
+    final tab = _tabs[i];
+    if (await _needsAsk(tab)) {
+      if (!mounted || !_tabs.contains(tab)) return;
+      setState(() => _confirming = tab);
       return;
     }
-    if (mounted && _tabs.contains(session)) closeTab(_tabs.indexOf(session));
+    if (mounted && _tabs.contains(tab)) closeTab(_tabs.indexOf(tab));
   }
 
-  /// The window is closing (the close button, Logo+W): true to let it close. When a program
-  /// other than the shell runs in any tab, asks first ("Do you want to terminate running
-  /// processes in this window?") and keeps the window open if the answer is no.
+  /// The window is closing (the close button, Logo+W): true to let it close. When any tab
+  /// needs asking about, asks first ("Do you want to terminate running processes in this
+  /// window?") and keeps the window open if the answer is no.
   Future<bool> requestCloseWindow() async {
     if (_confirming != null || _confirmingWindow != null) return false;
-    var running = false;
+    var ask = false;
     for (final tab in List.of(_tabs)) {
-      if (await tab.hasForegroundProcess()) {
-        running = true;
+      if (await _needsAsk(tab)) {
+        ask = true;
         break;
       }
     }
-    if (!running || !mounted) return true;
+    if (!ask || !mounted) return true;
     final answer = Completer<bool>();
     setState(() => _confirmingWindow = answer);
     return answer.future;
@@ -254,15 +458,15 @@ class TerminalWindowState extends State<TerminalWindow>
     if (window != null) {
       setState(() => _confirmingWindow = null);
       window.complete(terminate);
-      if (!terminate && !_finding) _gridFocus.requestFocus();
+      if (!terminate && !_finding) _tab.focus.requestFocus();
       return;
     }
-    final session = _confirming;
+    final tab = _confirming;
     setState(() => _confirming = null);
-    if (terminate && session != null && _tabs.contains(session)) {
-      closeTab(_tabs.indexOf(session));
+    if (terminate && tab != null && _tabs.contains(tab)) {
+      closeTab(_tabs.indexOf(tab));
     }
-    if (!_finding) _gridFocus.requestFocus();
+    if (!_finding && _tabs.isNotEmpty) _tab.focus.requestFocus();
   }
 
   Widget _confirmOverlay() => Positioned.fill(
@@ -297,9 +501,10 @@ class TerminalWindowState extends State<TerminalWindow>
   void selectTab(int index) {
     if (index < 0 || index >= _tabs.length) return;
     setState(() => _current = index);
-    _hadSelection = session.controller.selection != null;
+    _tab.belled = false;
+    _tab.decor.update(active: _windowActive);
     _endFind();
-    _gridFocus.requestFocus();
+    _tab.focus.requestFocus();
   }
 
   void _step(int by) {
@@ -307,15 +512,60 @@ class TerminalWindowState extends State<TerminalWindow>
     selectTab((_current + by) % _tabs.length);
   }
 
+  // ---- bells and drops --------------------------------------------------------------
+
+  DateTime? _lastNotified;
+
+  void _belled(_Tab tab) {
+    if (!mounted) return;
+    final profile = tab.session.profile;
+    final background = !_windowActive || tab != _tab;
+    if (background && profile.bellNotify) {
+      if (tab != _tab) setState(() => tab.belled = true);
+      final now = DateTime.now();
+      // One notification per few seconds, not one per bell of a loop.
+      if (_lastNotified == null ||
+          now.difference(_lastNotified!) > const Duration(seconds: 5)) {
+        _lastNotified = now;
+        _app.system
+            .notify(l10n.appTitle, l10n.bellNotification(tab.session.title))
+            .ignore();
+      }
+    }
+  }
+
+  /// Files dropped on the window: their quoted paths are typed into the current tab.
+  void _drag(SilicaDragEvent event) {
+    if (event is! SilicaDrop || !_windowActive || _tabs.isEmpty) return;
+    typePaths([for (final uri in event.uris) uri.toString()]);
+  }
+
+  /// Types the (shell-quoted) paths of `file://` URIs into the current tab.
+  void typePaths(Iterable<String> uris) {
+    final text = quotedPaths(uris);
+    if (text.isEmpty) return;
+    session.write('$text ');
+  }
+
+  // ---- title ------------------------------------------------------------------------
+
   bool _hadSelection = false;
 
-  /// The selection of the current tab came or went: Copy and the find items follow it.
-  void _selectionChanged() {
-    if (!mounted || _tabs.isEmpty) return;
-    final has = session.controller.selection != null;
-    if (has == _hadSelection) return;
-    _hadSelection = has;
-    _changed();
+  void _gridChanged() {
+    if (!mounted) return;
+    // Copy and the find items follow the selection of the current tab.
+    final has = _tabs.isNotEmpty && session.grid.selection.isNotEmpty;
+    if (has != _hadSelection) {
+      _hadSelection = has;
+      _changed();
+    }
+    if (!_finding) return;
+    // Output moves the matches: look again once it settles.
+    _refind?.cancel();
+    _refind = Timer(const Duration(milliseconds: 250), () {
+      if (mounted && _finding) _runFind(keep: true);
+    });
+    _refreshHits();
   }
 
   void _changed() {
@@ -331,64 +581,438 @@ class TerminalWindowState extends State<TerminalWindow>
       SystemChrome.setApplicationSwitcherDescription(
         ApplicationSwitcherDescription(label: _title),
       ).ignore();
+      widget.onTitle?.call(_title);
     }
   }
 
+  /// The title of a tab: the one the user gave, else the program's (with the directory if the
+  /// profile shows it).
+  String _tabTitle(_Tab tab) =>
+      tab.customTitle ??
+      (tab.session.profile.titleShowsDirectory
+          ? tab.session.titleWithDirectory(_app.system.home)
+          : tab.session.title);
+
   String get _title {
-    final t = session.terminal;
-    return l10n.windowTitle(session.title, t.viewWidth, t.viewHeight);
+    final s = session;
+    final base = _tabTitle(_tab);
+    if (!_profile.titleShowsSize) return base;
+    return l10n.windowTitle(base, s.grid.cols, s.grid.rows);
   }
 
+  // ---- find -------------------------------------------------------------------------
+
   /// The find bar adds 32 pt to the window, the grid keeps its size (terminal.md › Find bar).
-  void _growForFind(bool grow) {
+  void _growBy(double by) {
     final size = MediaQuery.maybeSizeOf(context);
     if (size == null) return;
-    final by = grow ? findBarHeight : -findBarHeight;
-    SilicaWindow.setSize(Size(size.width, size.height + by)).ignore();
+    SilicaWindow.setSize(
+      Size(size.width, size.height + by),
+      viewId: View.maybeOf(context)?.viewId ?? 0,
+    ).ignore();
   }
 
   void _startFind() {
-    if (!_finding) _growForFind(true);
+    if (!_finding) _growBy(findBarHeight);
     setState(() => _finding = true);
     _queryFocus.requestFocus();
     _runFind();
   }
 
   void _endFind() {
-    _highlights?.clear();
-    _highlights = null;
+    _refind?.cancel();
+    if (_tabs.isNotEmpty) _tab.decor.update(hits: const []);
     if (!_finding) return;
-    _growForFind(false);
+    _growBy(-findBarHeight);
     setState(() {
       _finding = false;
       _matches = const [];
     });
-    _gridFocus.requestFocus();
+    if (_tabs.isNotEmpty) _tab.focus.requestFocus();
   }
 
-  void _runFind({int step = 0}) {
+  int _findRun = 0;
+
+  /// Looks for the query in the whole buffer. [step] moves to the next or previous match;
+  /// without it the match nearest to the bottom is the current one. [keep] searches again
+  /// without moving the view or the current match.
+  Future<void> _runFind({int step = 0, bool keep = false}) async {
     if (_tabs.isEmpty) return;
-    final s = session;
-    final matches = findAll(s.terminal.buffer, _query.text);
+    final run = ++_findRun;
+    final tab = _tab;
+    final found = await tab.session.find(_query.text);
+    if (!mounted || run != _findRun || tab != _tab) return;
     setState(() {
-      _matches = matches;
-      _match = matches.isEmpty
-          ? 0
-          : (step == 0 ? matches.length - 1 : (_match + step)) % matches.length;
+      _matches = found;
+      if (found.isEmpty) {
+        _match = 0;
+      } else if (keep) {
+        _match = _match.clamp(0, found.length - 1);
+      } else {
+        _match = step == 0 ? found.length - 1 : (_match + step) % found.length;
+      }
     });
-    _highlights?.clear();
-    _highlights = SearchHighlights(s.terminal, s.controller)
-      ..show(matches, _match, profileOf(context).theme(active: _windowActive));
+    if (!keep && found.isNotEmpty) {
+      tab.session.scrollToRow(found[_match].firstRow);
+    }
+    _refreshHits();
+  }
+
+  void _stepFind(int step) {
+    if (_matches.isEmpty) {
+      unawaited(_runFind());
+      return;
+    }
+    setState(() => _match = (_match + step) % _matches.length);
+    session.scrollToRow(_matches[_match].firstRow);
+    _refreshHits();
+  }
+
+  /// The matches on screen, for the painter.
+  void _refreshHits() {
+    if (_tabs.isEmpty) return;
+    final top = session.topRow;
+    final rows = session.grid.rows;
+    final hits = <RowHit>[];
+    for (var i = 0; i < _matches.length; i++) {
+      for (final (row, x0, x1) in _matches[i].pieces) {
+        final y = row - top;
+        if (y >= 0 && y < rows)
+          hits.add(RowHit(y, x0, x1, current: i == _match));
+      }
+    }
+    _tab.decor.update(hits: hits);
+  }
+
+  /// Esc closes the find bar, Enter and Shift+Enter step through the matches.
+  KeyEventResult _findKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _endFind();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.enter) {
+      _stepFind(HardwareKeyboard.instance.isShiftPressed ? -1 : 1);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// Find › Use Selection for Find: the selected text becomes the query.
+  Future<void> _useSelectionForFind() async {
+    final text = await session.selectionText();
+    if (text == null || !mounted) return;
+    _query.text = text.split('\n').first;
+    _startFind();
+  }
+
+  // ---- actions ----------------------------------------------------------------------
+
+  Future<void> _jumpToSelection() async {
+    final row = session.selectionRow;
+    if (row != null) session.scrollToRow(row);
+  }
+
+  void _setFontSize(double size) {
+    setState(
+      () => _fontSize = size.clamp(fontSizeSteps.first, fontSizeSteps.last),
+    );
+  }
+
+  void _stepFontSize(int by) {
+    final now = fontSize;
+    if (by > 0) {
+      final next = fontSizeSteps.where((s) => s > now + 0.01);
+      if (next.isNotEmpty) _setFontSize(next.first);
+    } else {
+      final next = fontSizeSteps.where((s) => s < now - 0.01);
+      if (next.isNotEmpty) _setFontSize(next.last);
+    }
+  }
+
+  void _resetFontSize() => setState(() => _fontSize = null);
+
+  /// Opens a new window with [profile] (the default one otherwise); where the system opens
+  /// no windows, a tab.
+  Future<void> newWindow({
+    TerminalProfile? profile,
+    List<String>? command,
+    String? cwd,
+  }) async {
+    var directory = cwd;
+    if (directory == null &&
+        _tabs.isNotEmpty &&
+        _settings.newWindowDirectory == NewDirectory.sameAsCurrent) {
+      directory = await session.workingDirectory();
+    }
+    final opened = await _app.openWindow(
+      WindowSeed(
+        profile: profile ?? _settings.defaultProfile,
+        command: command ?? _app.command,
+        cwd: directory,
+      ),
+    );
+    if (!opened && mounted) {
+      await newTab(profile: profile, command: command, cwd: directory);
+    }
+  }
+
+  /// Moves the current tab to a window of its own.
+  Future<void> moveTabToNewWindow() async {
+    if (_tabs.length < 2) return;
+    final moved = session;
+    final opened = await _app.openWindow(WindowSeed(sessions: [moved]));
+    if (opened && mounted) release(moved);
+  }
+
+  /// Brings the tabs of every other window into this one.
+  void mergeAllWindows() {
+    for (final other in List.of(_app.windows)) {
+      if (other == this || !other.mounted) continue;
+      for (final tab in List.of(other.tabs)) {
+        other.release(tab);
+        adopt(tab);
+      }
+    }
+  }
+
+  /// The tab, the window and the app's windows as a group the settings can reopen.
+  void saveWindowGroup(String name) {
+    final windows = <WindowGroupWindow>[];
+    for (final w in _app.windows) {
+      if (!w.mounted) continue;
+      windows.add(
+        WindowGroupWindow([
+          for (final t in w._tabs)
+            WindowGroupTab(
+              profile: t.session.profile.id,
+              cwd: t.session.grid.cwd ?? t.session.cwd,
+              command: t.session.command,
+            ),
+        ]),
+      );
+    }
+    _settings.saveWindowGroup(WindowGroup(name, windows));
+  }
+
+  /// Opens the windows of a saved group.
+  Future<void> openWindowGroup(WindowGroup group) async {
+    var first = true;
+    for (final window in group.windows) {
+      if (window.tabs.isEmpty) continue;
+      final head = window.tabs.first;
+      final profile = _settings.profileById(head.profile);
+      final opened = first && _tabs.isNotEmpty
+          ? await _app.openWindow(
+              WindowSeed(
+                profile: profile,
+                command: head.command,
+                cwd: head.cwd,
+              ),
+            )
+          : await _app.openWindow(
+              WindowSeed(
+                profile: profile,
+                command: head.command,
+                cwd: head.cwd,
+              ),
+            );
+      first = false;
+      if (!opened) {
+        await newTab(profile: profile, command: head.command, cwd: head.cwd);
+      }
+      // The other tabs of the window open as tabs of the new one when it is up.
+      if (window.tabs.length > 1) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final target = _app.windows.isEmpty ? this : _app.windows.last;
+        for (final t in window.tabs.skip(1)) {
+          if (target.mounted) {
+            await target.newTab(
+              profile: _settings.profileById(t.profile),
+              command: t.command,
+              cwd: t.cwd,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  void _openLink(String target) {
+    _app.system.open(target).ignore();
+  }
+
+  Future<void> _manPage(String Function(String word) command) async {
+    final text = await session.selectionText();
+    final word = text?.trim().split(RegExp(r'\s+')).first ?? '';
+    if (word.isEmpty || !mounted) return;
+    // Only man page names: no shell syntax goes through.
+    if (!RegExp(r'^[A-Za-z0-9_.+:-]+$').hasMatch(word)) return;
+    await newTab(command: ['/bin/sh', '-c', command(word)]);
+  }
+
+  void _showPrompt(_Prompt prompt) {
+    _prompt?.controller.dispose();
+    setState(() => _prompt = prompt);
+  }
+
+  void _submitPrompt() {
+    final prompt = _prompt;
+    if (prompt == null) return;
+    final text = prompt.controller.text.trim();
+    setState(() => _prompt = null);
+    prompt.controller.dispose();
+    if (text.isNotEmpty) prompt.onSubmit(text);
+    if (_tabs.isNotEmpty) _tab.focus.requestFocus();
+  }
+
+  void _cancelPrompt() {
+    final prompt = _prompt;
+    setState(() => _prompt = null);
+    prompt?.controller.dispose();
+    if (_tabs.isNotEmpty) _tab.focus.requestFocus();
+  }
+
+  Widget _promptOverlay() {
+    final prompt = _prompt!;
+    return Positioned.fill(
+      key: const ValueKey('prompt'),
+      child: ColoredBox(
+        color: const Color(0x33000000),
+        child: Center(
+          child: AmalfiAlert(
+            title: prompt.title,
+            message: prompt.message,
+            accessory: AmalfiTextField(
+              key: const ValueKey('prompt field'),
+              controller: prompt.controller,
+              placeholder: prompt.placeholder,
+              autofocus: true,
+              width: 280,
+              onSubmitted: (_) => _submitPrompt(),
+            ),
+            actions: [
+              AmalfiPushButton(label: l10n.cancel, onPressed: _cancelPrompt),
+              AmalfiPushButton(
+                label: prompt.confirm,
+                variant: AmalfiPushButtonVariant.primary,
+                onPressed: _submitPrompt,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _askNewCommand() => _showPrompt(
+    _Prompt(
+      title: l10n.newCommand.replaceAll('…', ''),
+      message: l10n.newCommandMessage,
+      placeholder: l10n.commandPlaceholder,
+      confirm: l10n.run,
+      onSubmit: (text) => newWindow(command: ['/bin/sh', '-c', text]),
+    ),
+  );
+
+  void _askRemoteConnection() => _showPrompt(
+    _Prompt(
+      title: l10n.newRemoteConnection.replaceAll('…', ''),
+      message: l10n.newRemoteMessage,
+      placeholder: l10n.serverPlaceholder,
+      confirm: l10n.connect,
+      onSubmit: (text) {
+        // `ssh` takes one destination: a host, user@host, or a ssh:// URL.
+        if (text.startsWith('-') || text.contains(RegExp(r'\s'))) return;
+        newWindow(command: ['ssh', text]);
+      },
+    ),
+  );
+
+  void _askTitle() => _showPrompt(
+    _Prompt(
+      title: l10n.editTitle.replaceAll('…', ''),
+      message: l10n.editTitleMessage,
+      initial: _tab.customTitle ?? '',
+      confirm: l10n.ok,
+      onSubmit: (text) {
+        setState(() => _tab.customTitle = text);
+        _changed();
+      },
+    ),
+  );
+
+  void _askGroupName() => _showPrompt(
+    _Prompt(
+      title: l10n.saveWindowsAsGroup.replaceAll('…', ''),
+      message: l10n.saveGroupMessage,
+      placeholder: l10n.groupNamePlaceholder,
+      confirm: l10n.save,
+      onSubmit: saveWindowGroup,
+    ),
+  );
+
+  Future<void> _openSettings() => TerminalSettingsWindow.open(context, _app);
+
+  bool _about = false;
+  bool _inspecting = false;
+
+  void _openAbout() => setState(() => _about = true);
+
+  Widget _aboutOverlay() => Positioned.fill(
+    key: const ValueKey('about'),
+    child: ColoredBox(
+      color: const Color(0x33000000),
+      child: Center(
+        child: AmalfiAlert(
+          title: l10n.appTitle,
+          message: l10n.aboutMessage(appVersion),
+          actions: [
+            AmalfiPushButton(
+              label: l10n.ok,
+              variant: AmalfiPushButtonVariant.primary,
+              onPressed: () => setState(() => _about = false),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  /// The inspector (⌘I): a utility window; where Silica opens none, a panel in this one.
+  Future<void> _showInspector() async {
+    if (_inspecting) return;
+    final opened = await InspectorPanel.open(context, this);
+    if (!opened && mounted) setState(() => _inspecting = true);
+  }
+
+  // ---- build ------------------------------------------------------------------------
+
+  TerminalLook _look(TerminalProfile profile) {
+    final base = profileOf(context);
+    final colors = profile.scheme == 'default'
+        ? base.grid
+        : (extraProfiles[profile.scheme] ?? base.grid);
+    return TerminalLook(
+      colors: colors,
+      selection: _windowActive ? colors.selection : base.inactiveSelection,
+      find: base.findMatch,
+      currentFind: colors.selection,
+      mark: AmalfiTheme.of(context).colors.textTertiary,
+      fontSize: _fontSize ?? profile.fontSize,
+      fontFamily: profile.fontFamily,
+      boldFace: profile.boldText,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final profile = profileOf(context);
     final colors = AmalfiTheme.of(context).colors;
     if (_tabs.isEmpty) {
       return ColoredBox(color: colors.surfaceWindow);
     }
-    final s = session;
+    final tab = _tab;
+    final profile = tab.session.profile;
     final content = Actions(
       actions: {
         _StepTabIntent: CallbackAction<_StepTabIntent>(
@@ -405,27 +1029,25 @@ class TerminalWindowState extends State<TerminalWindow>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _titleBand(colors),
-              _tabBar(colors),
-              if (_finding) _findBar(colors, profile),
+              if (_showTabBar) _tabBar(colors),
+              if (_finding) _findBar(colors, profileOf(context)),
               Expanded(
-                child: AmalfiScrollbar(
-                  key: const ValueKey('scroller'),
-                  child: TerminalView(
-                    s.terminal,
-                    key: ObjectKey(s),
-                    controller: s.controller,
-                    scrollController: _scroll,
-                    padding: gridPadding,
-                    theme: profile.theme(active: _windowActive),
-                    textStyle: terminalStyle,
-                    focusNode: _gridFocus,
-                    onKeyEvent: _logoKey,
-                    autofocus: true,
-                    cursorType: TerminalCursorType.block,
-                    shortcuts: {...gridShortcuts, ...windowShortcuts},
-                    hardwareKeyboardOnly: true,
-                    keyboardAppearance: AmalfiTheme.of(context).brightness,
-                  ),
+                child: TerminalView(
+                  key: ObjectKey(tab.session),
+                  session: tab.session,
+                  look: _look(profile),
+                  focusNode: tab.focus,
+                  decor: tab.decor
+                    ..update(
+                      showMarks: profile.showMarks && _settings.autoMarkPrompts,
+                    ),
+                  padding: gridPadding,
+                  optionAsMeta: profile.optionAsMeta,
+                  mouseReporting: _settings.mouseReporting,
+                  openLinks: _settings.openLinks,
+                  onKeyEvent: _logoKey,
+                  onOpenLink: _openLink,
+                  onContextMenu: _contextMenu,
                 ),
               ),
             ],
@@ -435,20 +1057,77 @@ class TerminalWindowState extends State<TerminalWindow>
     );
     return SilicaMenuBar(
       menus: menus(AppLocalizations.of(context)),
-      child: _confirming == null && _confirmingWindow == null
+      child:
+          _confirming == null &&
+              _confirmingWindow == null &&
+              _prompt == null &&
+              !_about &&
+              !_inspecting
           ? content
-          : Stack(fit: StackFit.expand, children: [content, _confirmOverlay()]),
+          : Stack(
+              fit: StackFit.expand,
+              children: [
+                content,
+                if (_inspecting)
+                  Positioned(
+                    key: const ValueKey('inspector panel'),
+                    top: chromeHeight,
+                    right: 12,
+                    child: InspectorView(
+                      window: this,
+                      onClose: () => setState(() => _inspecting = false),
+                    ),
+                  ),
+                if (_about) _aboutOverlay(),
+                if (_prompt != null)
+                  _promptOverlay()
+                else if (_confirming != null || _confirmingWindow != null)
+                  _confirmOverlay(),
+              ],
+            ),
     );
   }
 
   /// ⌘ belongs to the app, never to the program: the grid takes the key first, so the menu
-  /// bar's shortcuts are run here (the bar binds them for the rest of the window).
+  /// bar's shortcuts are run here (the bar binds them for the rest of the window). Also the
+  /// keys of the window that have no menu item: ⌘1…⌘9 select a tab, Ctrl+Shift+C and V
+  /// copy and paste.
   KeyEventResult _logoKey(FocusNode node, KeyEvent event) {
-    if (!HardwareKeyboard.instance.isMetaPressed) return KeyEventResult.ignored;
+    final keyboard = HardwareKeyboard.instance;
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.tab &&
+        keyboard.isControlPressed &&
+        !keyboard.isMetaPressed &&
+        !keyboard.isAltPressed) {
+      _step(keyboard.isShiftPressed ? -1 : 1);
+      return KeyEventResult.handled;
+    }
+    if (event is KeyDownEvent &&
+        keyboard.isControlPressed &&
+        keyboard.isShiftPressed &&
+        !keyboard.isMetaPressed) {
+      if (event.logicalKey == LogicalKeyboardKey.keyC) {
+        session.copy().ignore();
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.keyV) {
+        session.paste().ignore();
+        return KeyEventResult.handled;
+      }
+    }
+    if (!keyboard.isMetaPressed) return KeyEventResult.ignored;
     if (event is KeyDownEvent) {
+      final digit = _digit(event.logicalKey);
+      if (digit != null &&
+          !keyboard.isShiftPressed &&
+          !keyboard.isAltPressed &&
+          !keyboard.isControlPressed) {
+        selectTab(digit == 9 ? _tabs.length - 1 : digit - 1);
+        return KeyEventResult.handled;
+      }
       final bindings = silicaMenuShortcuts(menus(AppLocalizations.of(context)));
       for (final entry in bindings.entries) {
-        if (entry.key.accepts(event, HardwareKeyboard.instance)) {
+        if (entry.key.accepts(event, keyboard)) {
           entry.value();
           break;
         }
@@ -457,38 +1136,62 @@ class TerminalWindowState extends State<TerminalWindow>
     return KeyEventResult.handled;
   }
 
-  /// Runs a text editing intent (copy, paste, select all) on the grid, as its own shortcut.
-  void _inGrid(Intent intent) {
-    final context = _gridFocus.context;
-    if (context != null) Actions.maybeInvoke(context, intent);
+  static int? _digit(LogicalKeyboardKey key) {
+    const keys = [
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.digit2,
+      LogicalKeyboardKey.digit3,
+      LogicalKeyboardKey.digit4,
+      LogicalKeyboardKey.digit5,
+      LogicalKeyboardKey.digit6,
+      LogicalKeyboardKey.digit7,
+      LogicalKeyboardKey.digit8,
+      LogicalKeyboardKey.digit9,
+    ];
+    final i = keys.indexOf(key);
+    return i < 0 ? null : i + 1;
   }
 
-  void _scrollBy(double by) {
-    if (!_scroll.hasClients) return;
-    final p = _scroll.position;
-    _scroll.jumpTo((p.pixels + by).clamp(p.minScrollExtent, p.maxScrollExtent));
+  void _contextMenu(Offset position) {
+    final l = AppLocalizations.of(context);
+    unawaited(
+      showAmalfiMenu(
+        context: context,
+        position: position,
+        entries: [
+          AmalfiMenuAction(
+            l.copy,
+            shortcut: '⌘C',
+            enabled: session.grid.selection.isNotEmpty,
+            onSelected: () => session.copy().ignore(),
+          ),
+          AmalfiMenuAction(
+            l.paste,
+            shortcut: '⌘V',
+            onSelected: () => session.paste().ignore(),
+          ),
+          AmalfiMenuAction(
+            l.selectAll,
+            shortcut: '⌘A',
+            onSelected: () => session.select('all').ignore(),
+          ),
+          const AmalfiMenuDivider(),
+          AmalfiMenuAction(
+            l.clearToStart,
+            shortcut: '⌘K',
+            onSelected: () => session.clear('toStart').ignore(),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _scrollToEdge({required bool top}) {
-    if (!_scroll.hasClients) return;
-    final p = _scroll.position;
-    _scroll.jumpTo(top ? p.minScrollExtent : p.maxScrollExtent);
-  }
-
-  /// Find › Use Selection for Find: the selected text becomes the query.
-  void _useSelectionForFind() {
-    final selection = session.controller.selection;
-    if (selection == null) return;
-    _query.text = session.terminal.buffer.getText(selection);
-    _startFind();
-  }
-
-  /// The profile the menus offer: Terminal has the one (light and dark follow the appearance).
-  static const String _profile = 'Basic';
+  /// The profile the menus offer first: the default one.
+  List<TerminalProfile> get _profiles => _settings.profiles;
 
   /// The menus in Silica's menu bar (silica-desktop#25; terminal.md › Menus): the app menu,
-  /// Shell, Edit, View, Window and Help. What the app cannot do yet is shown disabled, as the
-  /// reference does for unavailable items; see docs/spec.md › Menus.
+  /// Shell, Edit, View, Window and Help. What the app cannot do is not shown; see
+  /// docs/spec.md › Menus.
   List<PlatformMenuItem> menus(AppLocalizations l) {
     SingleActivator cmd(
       LogicalKeyboardKey key, {
@@ -497,74 +1200,93 @@ class TerminalWindowState extends State<TerminalWindow>
       bool ctrl = false,
     }) =>
         SingleActivator(key, meta: true, shift: shift, alt: alt, control: ctrl);
-    // An item without an action is drawn disabled.
-    SilicaMenuItem off(String label, [MenuSerializableShortcut? shortcut]) =>
-        SilicaMenuItem(label: label, shortcut: shortcut);
     PlatformMenuItemGroup group(List<PlatformMenuItem> members) =>
         PlatformMenuItemGroup(members: members);
-    PlatformMenuItemGroup profiles(String sub, String same, VoidCallback run) =>
-        group([
-          SilicaMenuItem(
-            label: sub,
-            shortcut: cmd(LogicalKeyboardKey.keyT),
-            onSelected: run,
-          ),
-          SilicaMenuItem(
-            label: same,
-            shortcut: cmd(LogicalKeyboardKey.keyT, ctrl: true),
-            onSelected: run,
-          ),
-        ]);
 
-    final hasSelection =
-        _tabs.isNotEmpty && session.controller.selection != null;
+    final empty = _tabs.isEmpty;
+    final hasSelection = !empty && session.grid.selection.isNotEmpty;
     final tabs = _tabs.length;
     final canFind = _finding && _matches.isNotEmpty;
-    final home = LogicalKeyboardKey.home;
-    final end = LogicalKeyboardKey.end;
+    final profile = _settings.defaultProfile;
     final pageUp = LogicalKeyboardKey.pageUp;
     final pageDown = LogicalKeyboardKey.pageDown;
 
+    /// "New Window/Tab" with its submenu of profiles: the plain shortcut uses the default.
+    SilicaMenu opener({
+      required String label,
+      required String withProfile,
+      required String sameCommand,
+      required LogicalKeyboardKey key,
+      required void Function(TerminalProfile) open,
+      required VoidCallback sameOpen,
+    }) => SilicaMenu(
+      label: label,
+      menus: [
+        group([
+          SilicaMenuItem(
+            label: withProfile,
+            shortcut: cmd(key),
+            onSelected: () => open(profile),
+          ),
+          SilicaMenuItem(
+            label: sameCommand,
+            shortcut: cmd(key, ctrl: true),
+            onSelected: sameOpen,
+          ),
+        ]),
+        group([
+          for (final p in _profiles)
+            SilicaMenuItem(label: p.name, onSelected: () => open(p)),
+        ]),
+      ],
+    );
+
     return [
-      SilicaMenus.app(l.appTitle, items: [off(l.secureKeyboardEntry)]),
+      SilicaMenus.app(
+        l.appTitle,
+        onAbout: _openAbout,
+        onSettings: () => unawaited(_openSettings()),
+      ),
       SilicaMenu(
         label: l.menuShell,
         menus: [
           group([
-            SilicaMenu(
+            opener(
               label: l.newWindow,
-              enabled: false,
-              menus: [
-                group([
-                  off(
-                    l.newWindowWithProfile(_profile),
-                    cmd(LogicalKeyboardKey.keyN),
-                  ),
-                  off(
-                    l.newWindowSameCommand,
-                    cmd(LogicalKeyboardKey.keyN, ctrl: true),
-                  ),
-                ]),
-                group([off(_profile)]),
-              ],
-            ),
-            SilicaMenu(
-              label: l.newTab,
-              menus: [
-                profiles(
-                  l.newTabWithProfile(_profile),
-                  l.newTabSameCommand,
-                  newTab,
+              withProfile: l.newWindowWithProfile(profile.name),
+              sameCommand: l.newWindowSameCommand,
+              key: LogicalKeyboardKey.keyN,
+              open: (p) => unawaited(newWindow(profile: p)),
+              sameOpen: () => unawaited(
+                newWindow(
+                  profile: empty ? null : session.profile,
+                  command: empty ? null : session.command,
                 ),
-                group([SilicaMenuItem(label: _profile, onSelected: newTab)]),
-              ],
+              ),
             ),
-            off(l.newCommand, cmd(LogicalKeyboardKey.keyN, shift: true)),
-            off(
-              l.newRemoteConnection,
-              cmd(LogicalKeyboardKey.keyK, shift: true),
+            opener(
+              label: l.newTab,
+              withProfile: l.newTabWithProfile(profile.name),
+              sameCommand: l.newTabSameCommand,
+              key: LogicalKeyboardKey.keyT,
+              open: (p) => unawaited(newTab(profile: p)),
+              sameOpen: () => unawaited(
+                newTab(
+                  profile: empty ? null : session.profile,
+                  command: empty ? null : session.command,
+                ),
+              ),
             ),
-            off(l.open, cmd(LogicalKeyboardKey.keyO)),
+            SilicaMenuItem(
+              label: l.newCommand,
+              shortcut: cmd(LogicalKeyboardKey.keyN, shift: true),
+              onSelected: _askNewCommand,
+            ),
+            SilicaMenuItem(
+              label: l.newRemoteConnection,
+              shortcut: cmd(LogicalKeyboardKey.keyK, shift: true),
+              onSelected: _askRemoteConnection,
+            ),
           ]),
           group([
             // ⌘W closes the tab, and the window with the last one (as asked about running
@@ -574,32 +1296,43 @@ class TerminalWindowState extends State<TerminalWindow>
               shortcut: cmd(LogicalKeyboardKey.keyW),
               onSelected: () => unawaited(requestCloseTab()),
             ),
-            off(l.closeAll, cmd(LogicalKeyboardKey.keyW, alt: true)),
+            SilicaMenuItem.closeAll(label: l.closeAll),
           ]),
-          group([off(l.useSettingsAsDefault), off(l.exportSettings)]),
           group([
-            off(l.exportText, cmd(LogicalKeyboardKey.keyS)),
-            off(
-              l.exportSelectedText,
-              cmd(LogicalKeyboardKey.keyS, shift: true),
+            SilicaMenuItem(
+              label: l.useSettingsAsDefault,
+              enabled: !empty,
+              onSelected: () => _settings.setDefaultProfile(session.profile.id),
             ),
           ]),
           group([
-            off(l.showInspector, cmd(LogicalKeyboardKey.keyI)),
-            off(l.editTitle, cmd(LogicalKeyboardKey.keyI, shift: true)),
-            off(l.editBackgroundColor, cmd(LogicalKeyboardKey.keyI, alt: true)),
-          ]),
-          group([
-            off(l.reset, cmd(LogicalKeyboardKey.keyR, alt: true)),
-            off(
-              l.hardReset,
-              cmd(LogicalKeyboardKey.keyR, alt: true, ctrl: true),
+            SilicaMenuItem(
+              label: l.showInspector,
+              shortcut: cmd(LogicalKeyboardKey.keyI),
+              enabled: !empty,
+              onSelected: _showInspector,
+            ),
+            SilicaMenuItem(
+              label: l.editTitle,
+              shortcut: cmd(LogicalKeyboardKey.keyI, shift: true),
+              enabled: !empty,
+              onSelected: _askTitle,
             ),
           ]),
           group([
-            off(l.printSelection, cmd(LogicalKeyboardKey.keyP, alt: true)),
+            SilicaMenuItem(
+              label: l.reset,
+              shortcut: cmd(LogicalKeyboardKey.keyR, alt: true),
+              enabled: !empty,
+              onSelected: () => session.reset(),
+            ),
+            SilicaMenuItem(
+              label: l.hardReset,
+              shortcut: cmd(LogicalKeyboardKey.keyR, alt: true, ctrl: true),
+              enabled: !empty,
+              onSelected: () => session.reset(hard: true),
+            ),
           ]),
-          group([off(l.print, cmd(LogicalKeyboardKey.keyP))]),
         ],
       ),
       SilicaMenu(
@@ -615,55 +1348,43 @@ class TerminalWindowState extends State<TerminalWindow>
               role: SilicaMenuItemRole.copy,
               shortcut: cmd(LogicalKeyboardKey.keyC),
               enabled: hasSelection,
-              onSelected: () => _inGrid(CopySelectionTextIntent.copy),
-            ),
-            SilicaMenu(
-              label: l.copySpecial,
-              menus: [
-                group([
-                  off(
-                    l.copyWithoutBackground,
-                    cmd(LogicalKeyboardKey.keyC, ctrl: true, shift: true),
-                  ),
-                  off(
-                    l.copyTextOnly,
-                    cmd(LogicalKeyboardKey.keyC, alt: true, shift: true),
-                  ),
-                ]),
-                group([
-                  off(l.copyStyle),
-                  SilicaMenuItem(
-                    label: l.terminalSettingsDefault,
-                    checked: true,
-                  ),
-                  off(l.plainText),
-                  off(_profile),
-                ]),
-              ],
+              onSelected: () => session.copy().ignore(),
             ),
             SilicaMenuItem(
               role: SilicaMenuItemRole.paste,
               shortcut: cmd(LogicalKeyboardKey.keyV),
-              onSelected: () => _inGrid(
-                const PasteTextIntent(SelectionChangedCause.keyboard),
-              ),
+              enabled: !empty,
+              onSelected: () => session.paste().ignore(),
             ),
-            off(l.pasteEscaped, cmd(LogicalKeyboardKey.keyV, ctrl: true)),
-            off(l.pasteSelection, cmd(LogicalKeyboardKey.keyV, shift: true)),
-            off(
-              l.pasteSelectionEscaped,
-              cmd(LogicalKeyboardKey.keyV, ctrl: true, shift: true),
+            SilicaMenuItem(
+              label: l.pasteEscaped,
+              shortcut: cmd(LogicalKeyboardKey.keyV, ctrl: true),
+              enabled: !empty,
+              onSelected: () => session.paste(escaped: true).ignore(),
+            ),
+            SilicaMenuItem(
+              label: l.pasteSelection,
+              shortcut: cmd(LogicalKeyboardKey.keyV, shift: true),
+              enabled: !empty && PrimarySelection.text != null,
+              onSelected: () => session.pastePrimary(),
+            ),
+            SilicaMenuItem(
+              label: l.pasteSelectionEscaped,
+              shortcut: cmd(LogicalKeyboardKey.keyV, ctrl: true, shift: true),
+              enabled: !empty && PrimarySelection.text != null,
+              onSelected: () => session.pastePrimary(escaped: true),
             ),
             SilicaMenuItem(
               role: SilicaMenuItemRole.selectAll,
               shortcut: cmd(LogicalKeyboardKey.keyA),
-              onSelected: () => _inGrid(
-                const SelectAllTextIntent(SelectionChangedCause.keyboard),
-              ),
+              enabled: !empty,
+              onSelected: () => session.select('all').ignore(),
             ),
-            off(
-              l.selectBetweenMarks,
-              cmd(LogicalKeyboardKey.keyA, shift: true),
+            SilicaMenuItem(
+              label: l.selectBetweenMarks,
+              shortcut: cmd(LogicalKeyboardKey.keyA, shift: true),
+              enabled: !empty,
+              onSelected: () => session.select('marks').ignore(),
             ),
           ]),
           group([
@@ -671,81 +1392,68 @@ class TerminalWindowState extends State<TerminalWindow>
               label: l.marks,
               menus: [
                 group([
-                  SilicaMenuItem(label: l.autoMarkPrompts, checked: true),
+                  SilicaMenuItem(
+                    label: l.autoMarkPrompts,
+                    checked: _settings.autoMarkPrompts,
+                    onSelected: () => _settings.set(
+                      autoMarkPrompts: !_settings.autoMarkPrompts,
+                    ),
+                  ),
                 ]),
-                group([off(l.markLineAndNewline), off(l.newlineWithoutMark)]),
                 group([
-                  off(l.mark, cmd(LogicalKeyboardKey.keyU)),
-                  off(
-                    l.markAsBookmark,
-                    cmd(LogicalKeyboardKey.keyU, alt: true),
+                  SilicaMenuItem(
+                    label: l.mark,
+                    shortcut: cmd(LogicalKeyboardKey.keyU),
+                    enabled: !empty,
+                    onSelected: () => session.mark().ignore(),
                   ),
-                  off(l.removeMark, cmd(LogicalKeyboardKey.keyU, shift: true)),
-                ]),
-              ],
-            ),
-            SilicaMenu(
-              label: l.bookmarks,
-              menus: [
-                group([
-                  off(
-                    l.insertBookmark,
-                    cmd(LogicalKeyboardKey.keyM, shift: true),
-                  ),
-                  off(
-                    l.insertNamedBookmark,
-                    cmd(LogicalKeyboardKey.keyM, shift: true, alt: true),
+                  SilicaMenuItem(
+                    label: l.removeMark,
+                    shortcut: cmd(LogicalKeyboardKey.keyU, shift: true),
+                    enabled: !empty,
+                    onSelected: () => session.mark(add: false).ignore(),
                   ),
                 ]),
-                group([off(l.noBookmarks)]),
               ],
             ),
             SilicaMenu(
               label: l.navigate,
               menus: [
-                off(l.previousMark, cmd(LogicalKeyboardKey.arrowUp)),
-                off(
-                  l.selectToPreviousMark,
-                  cmd(LogicalKeyboardKey.arrowUp, shift: true),
+                SilicaMenuItem(
+                  label: l.previousMark,
+                  shortcut: cmd(LogicalKeyboardKey.arrowUp),
+                  enabled: !empty,
+                  onSelected: () => session.scrollTo('previousPrompt'),
                 ),
-                off(l.nextMark, cmd(LogicalKeyboardKey.arrowDown)),
-                off(
-                  l.selectToNextMark,
-                  cmd(LogicalKeyboardKey.arrowDown, shift: true),
-                ),
-                off(
-                  l.previousBookmark,
-                  cmd(LogicalKeyboardKey.arrowUp, alt: true),
-                ),
-                off(
-                  l.selectToPreviousBookmark,
-                  cmd(LogicalKeyboardKey.arrowUp, alt: true, shift: true),
-                ),
-                off(
-                  l.nextBookmark,
-                  cmd(LogicalKeyboardKey.arrowDown, alt: true),
-                ),
-                off(
-                  l.selectToNextBookmark,
-                  cmd(LogicalKeyboardKey.arrowDown, alt: true, shift: true),
+                SilicaMenuItem(
+                  label: l.nextMark,
+                  shortcut: cmd(LogicalKeyboardKey.arrowDown),
+                  enabled: !empty,
+                  onSelected: () => session.scrollTo('nextPrompt'),
                 ),
               ],
             ),
           ]),
           group([
-            off(l.clearToPreviousMark, cmd(LogicalKeyboardKey.keyL)),
-            off(
-              l.clearToPreviousBookmark,
-              cmd(LogicalKeyboardKey.keyL, alt: true),
+            SilicaMenuItem(
+              label: l.clearToPreviousMark,
+              shortcut: cmd(LogicalKeyboardKey.keyL),
+              enabled: !empty,
+              onSelected: () => session.clear('toMark').ignore(),
             ),
-            off(l.clearToStart, cmd(LogicalKeyboardKey.keyK)),
+            SilicaMenuItem(
+              label: l.clearToStart,
+              shortcut: cmd(LogicalKeyboardKey.keyK),
+              enabled: !empty,
+              onSelected: () => session.clear('toStart').ignore(),
+            ),
           ]),
           group([
-            off(l.removeExcessLines, cmd(LogicalKeyboardKey.keyK, alt: true)),
-            off(l.clearScreen, cmd(LogicalKeyboardKey.keyL, ctrl: true)),
-            off(
-              l.fillScreen,
-              cmd(LogicalKeyboardKey.keyL, ctrl: true, alt: true),
+            SilicaMenuItem(
+              label: l.clearScreen,
+              shortcut: cmd(LogicalKeyboardKey.keyL, ctrl: true),
+              enabled: !empty,
+              onSelected: () => session.clear('screen').ignore(),
             ),
           ]),
           group([
@@ -756,22 +1464,22 @@ class TerminalWindowState extends State<TerminalWindow>
                   SilicaMenuItem(
                     label: l.findEllipsis,
                     shortcut: cmd(LogicalKeyboardKey.keyF),
+                    enabled: !empty,
                     onSelected: _startFind,
                   ),
                   SilicaMenuItem(
                     label: l.findNextItem,
                     shortcut: cmd(LogicalKeyboardKey.keyG),
                     enabled: canFind,
-                    onSelected: () => _runFind(step: 1),
+                    onSelected: () => _stepFind(1),
                   ),
                   SilicaMenuItem(
                     label: l.findPreviousItem,
                     shortcut: cmd(LogicalKeyboardKey.keyG, shift: true),
                     enabled: canFind,
-                    onSelected: () => _runFind(step: -1),
+                    onSelected: () => _stepFind(-1),
                   ),
                 ]),
-                group([off(l.findSelectAll), off(l.findSelectAllInSelection)]),
                 group([
                   SilicaMenuItem(
                     label: l.hideFindBar,
@@ -785,17 +1493,28 @@ class TerminalWindowState extends State<TerminalWindow>
                     label: l.useSelectionForFind,
                     shortcut: cmd(LogicalKeyboardKey.keyE),
                     enabled: hasSelection,
-                    onSelected: _useSelectionForFind,
+                    onSelected: () => unawaited(_useSelectionForFind()),
                   ),
-                  off(l.jumpToSelection, cmd(LogicalKeyboardKey.keyJ)),
+                  SilicaMenuItem(
+                    label: l.jumpToSelection,
+                    shortcut: cmd(LogicalKeyboardKey.keyJ),
+                    enabled: !empty && session.selectionRow != null,
+                    onSelected: () => unawaited(_jumpToSelection()),
+                  ),
                 ]),
               ],
             ),
           ]),
-          group([off(l.showColors, cmd(LogicalKeyboardKey.keyC, shift: true))]),
           group([
-            off(l.optionAsMeta, cmd(LogicalKeyboardKey.keyO, alt: true)),
-            off(l.numLock),
+            SilicaMenuItem(
+              label: l.optionAsMeta,
+              shortcut: cmd(LogicalKeyboardKey.keyO, alt: true),
+              checked: !empty && _profile.optionAsMeta,
+              enabled: !empty,
+              onSelected: () => _settings.updateProfile(
+                _profile.copyWith(optionAsMeta: !_profile.optionAsMeta),
+              ),
+            ),
           ]),
         ],
       ),
@@ -803,74 +1522,90 @@ class TerminalWindowState extends State<TerminalWindow>
         label: l.menuView,
         menus: [
           group([
-            off(l.showAllTabs),
-            off(l.showTabBar, cmd(LogicalKeyboardKey.keyT, shift: true)),
-            off(l.hideMarks),
-          ]),
-          group([
-            off(l.showAlternateScreen, cmd(pageDown, shift: true)),
-            off(l.hideAlternateScreen, cmd(pageUp, shift: true)),
+            SilicaMenuItem(
+              label: _showTabBar ? l.hideTabBar : l.showTabBar,
+              shortcut: cmd(LogicalKeyboardKey.keyT, shift: true),
+              onSelected: () => setState(() => _showTabBar = !_showTabBar),
+            ),
+            SilicaMenuItem(
+              label: _settings.autoMarkPrompts && _profile.showMarks
+                  ? l.hideMarks
+                  : l.showMarks,
+              enabled: !empty,
+              onSelected: () => _settings.updateProfile(
+                _profile.copyWith(showMarks: !_profile.showMarks),
+              ),
+            ),
           ]),
           group([
             SilicaMenuItem(
               label: l.allowMouseReporting,
               shortcut: cmd(LogicalKeyboardKey.keyR),
-              checked: true,
+              checked: _settings.mouseReporting,
+              onSelected: () =>
+                  _settings.set(mouseReporting: !_settings.mouseReporting),
             ),
           ]),
           group([
-            off(l.splitPane, cmd(LogicalKeyboardKey.keyD)),
-            off(l.closeSplitPane, cmd(LogicalKeyboardKey.keyD, shift: true)),
-          ]),
-          group([
-            off(l.defaultFontSize, cmd(LogicalKeyboardKey.digit0)),
+            SilicaMenuItem(
+              label: l.defaultFontSize,
+              shortcut: cmd(LogicalKeyboardKey.digit0),
+              enabled: !empty,
+              onSelected: _resetFontSize,
+            ),
             SilicaMenuItem(
               label: l.fontBigger,
               shortcut: const CharacterActivator('+', meta: true),
+              enabled: !empty,
+              onSelected: () => _stepFontSize(1),
             ),
             SilicaMenuItem(
               label: l.fontSmaller,
               shortcut: const CharacterActivator('-', meta: true),
+              enabled: !empty,
+              onSelected: () => _stepFontSize(-1),
             ),
           ]),
           group([
             SilicaMenuItem(
               label: l.scrollToTop,
-              shortcut: cmd(home),
-              onSelected: () => _scrollToEdge(top: true),
+              shortcut: cmd(LogicalKeyboardKey.home),
+              enabled: !empty,
+              onSelected: () => session.scrollTo('top'),
             ),
             SilicaMenuItem(
               label: l.scrollToBottom,
-              shortcut: cmd(end),
-              onSelected: () => _scrollToEdge(top: false),
+              shortcut: cmd(LogicalKeyboardKey.end),
+              enabled: !empty,
+              onSelected: () => session.scrollTo('bottom'),
             ),
           ]),
           group([
             SilicaMenuItem(
               label: l.pageUp,
               shortcut: cmd(pageUp),
-              onSelected: () => _scrollBy(
-                _scroll.hasClients ? -_scroll.position.viewportDimension : 0,
-              ),
+              enabled: !empty,
+              onSelected: () => session.scrollPage(1),
             ),
             SilicaMenuItem(
               label: l.pageDown,
               shortcut: cmd(pageDown),
-              onSelected: () => _scrollBy(
-                _scroll.hasClients ? _scroll.position.viewportDimension : 0,
-              ),
+              enabled: !empty,
+              onSelected: () => session.scrollPage(-1),
             ),
           ]),
           group([
             SilicaMenuItem(
               label: l.lineUp,
               shortcut: cmd(pageUp, alt: true),
-              onSelected: () => _scrollBy(-cellSize.height),
+              enabled: !empty,
+              onSelected: () => session.scrollLines(1),
             ),
             SilicaMenuItem(
               label: l.lineDown,
               shortcut: cmd(pageDown, alt: true),
-              onSelected: () => _scrollBy(cellSize.height),
+              enabled: !empty,
+              onSelected: () => session.scrollLines(-1),
             ),
           ]),
           group([SilicaMenuItem.system(SilicaMenuItemRole.fullScreen)]),
@@ -899,15 +1634,33 @@ class TerminalWindowState extends State<TerminalWindow>
               enabled: tabs > 1,
               onSelected: () => _step(1),
             ),
-            off(l.moveTabToNewWindow),
-            off(l.mergeAllWindows),
+            SilicaMenuItem(
+              label: l.moveTabToNewWindow,
+              enabled: tabs > 1,
+              onSelected: () => unawaited(moveTabToNewWindow()),
+            ),
+            SilicaMenuItem(
+              label: l.mergeAllWindows,
+              enabled: _app.windows.length > 1,
+              onSelected: mergeAllWindows,
+            ),
           ]),
           group([
             SilicaMenu(
               label: l.openWindowGroup,
-              menus: [off(l.noWindowGroups)],
+              enabled: _settings.windowGroups.isNotEmpty,
+              menus: [
+                for (final g in _settings.windowGroups)
+                  SilicaMenuItem(
+                    label: g.name,
+                    onSelected: () => unawaited(openWindowGroup(g)),
+                  ),
+              ],
             ),
-            off(l.saveWindowsAsGroup),
+            SilicaMenuItem(
+              label: l.saveWindowsAsGroup,
+              onSelected: _askGroupName,
+            ),
           ]),
         ],
       ),
@@ -915,18 +1668,26 @@ class TerminalWindowState extends State<TerminalWindow>
         l.menuHelp,
         items: [
           group([
-            off(
-              l.openManPage,
-              const CharacterActivator('?', meta: true, control: true),
+            SilicaMenuItem(
+              label: l.openManPage,
+              shortcut: const CharacterActivator(
+                '?',
+                meta: true,
+                control: true,
+              ),
+              enabled: hasSelection,
+              onSelected: () => unawaited(_manPage((w) => 'man -- $w')),
             ),
-            off(
-              l.searchManIndex,
-              const CharacterActivator(
+            SilicaMenuItem(
+              label: l.searchManIndex,
+              shortcut: const CharacterActivator(
                 "'",
                 meta: true,
                 control: true,
                 alt: true,
               ),
+              enabled: hasSelection,
+              onSelected: () => unawaited(_manPage((w) => 'man -k -- $w')),
             ),
           ]),
         ],
@@ -991,7 +1752,7 @@ class TerminalWindowState extends State<TerminalWindow>
           child: AmalfiIconButton(
             key: const ValueKey('new tab'),
             icon: const AmalfiGlyph(AmalfiGlyphs.plus),
-            onPressed: newTab,
+            onPressed: () => unawaited(newTab()),
             semanticLabel: l10n.newTab,
           ),
         ),
@@ -1018,28 +1779,29 @@ class TerminalWindowState extends State<TerminalWindow>
       weights: weights,
       selected: [
         for (final slot in _slots)
-          _tabs.indexOf(slot.session) == _current && !slot.closing,
+          _tabs.indexOf(slot.tab) == _current && !slot.closing,
       ].indexOf(true),
     );
     return Row(
       children: [
         for (var i = 0; i < _slots.length; i++)
-          SizedBox(width: widths[i], child: _tab(_slots[i])),
+          SizedBox(width: widths[i], child: _tabWidget(_slots[i])),
       ],
     );
   }
 
   /// One tab (`AmalfiTab`: the selected one raised, the × on the selected and the hovered
   /// one), [tabGap] kept at its trailing side.
-  Widget _tab(_TabSlot slot) {
-    final index = _tabs.indexOf(slot.session);
+  Widget _tabWidget(_TabSlot slot) {
+    final index = _tabs.indexOf(slot.tab);
     final selected = index == _current && !slot.closing;
+    final title = _tabTitle(slot.tab);
     return ClipRect(
       child: Padding(
         padding: const EdgeInsets.only(right: tabGap),
         child: AmalfiTab(
           key: index < 0 ? null : ValueKey('tab $index'),
-          label: slot.session.title,
+          label: slot.tab.belled ? '• $title' : title,
           selected: selected,
           width: null,
           closeLabel: l10n.closeTab,
@@ -1050,20 +1812,6 @@ class TerminalWindowState extends State<TerminalWindow>
         ),
       ),
     );
-  }
-
-  /// Esc closes the find bar, Enter and Shift+Enter step through the matches.
-  KeyEventResult _findKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
-      _endFind();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.enter) {
-      _runFind(step: HardwareKeyboard.instance.isShiftPressed ? -1 : 1);
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
   }
 
   /// The find bar (kit `Apps/Terminal/Find Bar`, 32 pt): the search field (small, 480 in a
@@ -1139,7 +1887,7 @@ class TerminalWindowState extends State<TerminalWindow>
                             semanticLabel: l10n.findNext,
                           ),
                         ],
-                        onPressed: (i) => _runFind(step: i == 0 ? -1 : 1),
+                        onPressed: (i) => _stepFind(i == 0 ? -1 : 1),
                       ),
                     ),
                     const SizedBox(width: 20),

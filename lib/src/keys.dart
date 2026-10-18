@@ -19,6 +19,14 @@ class TerminalModes {
   bool get focusEvents => bits & 16 != 0;
   bool get altScreen => bits & 32 != 0;
   bool get appKeypad => bits & 64 != 0;
+
+  /// Mouse reporting of drags (1002), of all motion (1003), with UTF-8 coordinates (1005),
+  /// in the X10 form (9), and the wheel as arrow keys in the alternate screen (1007).
+  bool get mouseDrag => bits & 128 != 0;
+  bool get mouseMotion => bits & 256 != 0;
+  bool get utf8Mouse => bits & 512 != 0;
+  bool get x10Mouse => bits & 1024 != 0;
+  bool get alternateScroll => bits & 2048 != 0;
 }
 
 /// The bytes for a key press (or repeat); null if the terminal does not handle the key

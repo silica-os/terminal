@@ -27,7 +27,10 @@ void main() {
 
   test('the bundled font advances exactly one cell', () {
     final painter = TextPainter(
-      text: TextSpan(text: 'M' * 80, style: terminalStyle.toTextStyle()),
+      text: TextSpan(
+        text: 'M' * 80,
+        style: terminalTextStyle(terminalFontSize),
+      ),
       textDirection: TextDirection.ltr,
     )..layout();
     expect(painter.width, moreOrLessEquals(80 * 7.2, epsilon: 0.5));
@@ -41,9 +44,22 @@ void main() {
     expect(ansiNormal[7], const Color(0xFFBFBFBF));
     expect(ansiBright[0], const Color(0xFF666666));
     expect(ansiBright[4], const Color(0xFF0033FF));
-    final theme = lightProfile.theme(active: true);
-    expect(theme.red, ansiNormal[1]);
-    expect(theme.brightWhite, ansiBright[7]);
+    expect(lightProfile.grid.indexed(1), ansiNormal[1]);
+    expect(lightProfile.grid.indexed(15), ansiBright[7]);
+    // The xterm cube and the greys.
+    expect(lightProfile.grid.indexed(16), const Color(0xFF000000));
+    expect(lightProfile.grid.indexed(196), const Color(0xFFFF0000));
+    expect(lightProfile.grid.indexed(231), const Color(0xFFFFFFFF));
+    expect(lightProfile.grid.indexed(232), const Color(0xFF080808));
+    expect(lightProfile.grid.indexed(255), const Color(0xFFEEEEEE));
+  });
+
+  test('cells scale with the font size', () {
+    expect(cellWidthFor(12), moreOrLessEquals(7.2));
+    expect(cellHeightFor(12), 16);
+    expect(cellWidthFor(24), moreOrLessEquals(14.4));
+    expect(cellHeightFor(24), 32);
+    expect(fontSizeSteps, contains(terminalFontSize));
   });
 
   test(
@@ -60,14 +76,10 @@ void main() {
       expect(darkProfile.grid.cursor, const Color(0xFF9D9D9D));
       expect(lightProfile.findMatch, const Color(0xFFC8C8C8));
       expect(darkProfile.findMatch, const Color(0xFF5A5A5B));
-      expect(
-        lightProfile.theme(active: true).searchHitBackground,
-        lightProfile.findMatch,
-      );
       // Grey selection when the window is inactive.
       for (final profile in [lightProfile, darkProfile]) {
-        expect(profile.theme(active: true).selection, profile.grid.selection);
-        final inactive = profile.theme(active: false).selection;
+        expect(profile.selectionColor(active: true), profile.grid.selection);
+        final inactive = profile.selectionColor(active: false);
         expect(inactive, profile.inactiveSelection);
         expect(inactive.r, inactive.g);
         expect(inactive.g, inactive.b);

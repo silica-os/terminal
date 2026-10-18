@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:silica_ui/silica_ui.dart';
+import 'package:terminal/src/app.dart';
 import 'package:terminal/src/l10n.dart';
 import 'package:terminal/src/pty.dart';
 import 'package:terminal/src/style.dart';
+import 'package:terminal/src/system.dart';
+import 'package:terminal/src/terminal_view.dart';
 import 'package:terminal/src/window.dart';
-import 'package:xterm/xterm.dart';
 
 void main() {
   final lightProfile = Profile.of(
@@ -24,6 +26,12 @@ void main() {
     addTearDown(tester.view.reset);
     final fake = pty ?? FakePty();
     var closed = false;
+    final app = TerminalApp(
+      pty: fake,
+      shellName: 'bash',
+      system: FakeSystem(home: '/home/me'),
+    );
+    addTearDown(app.settings.dispose);
     await tester.pumpWidget(
       AppLocalizationsScope(
         locale: locale,
@@ -32,8 +40,7 @@ void main() {
           child: AmalfiTheme(
             app: 'Terminal',
             child: TerminalWindow(
-              pty: fake,
-              shellName: 'bash',
+              app: app,
               onLastTabClosed: () => closed = true,
             ),
           ),
@@ -113,21 +120,22 @@ void main() {
   testWidgets('an inactive window: hollow cursor and grey selection', (
     tester,
   ) async {
-    await pump(tester);
+    final (_, window) = await pump(tester);
     TerminalView view() =>
         tester.widget<TerminalView>(find.byType(TerminalView));
-    expect(view().focusNode!.hasFocus, isTrue);
-    expect(view().cursorType, TerminalCursorType.block);
-    expect(view().theme.selection, lightProfile.grid.selection);
+    expect(view().focusNode.hasFocus, isTrue);
+    expect(window.decor.active, isTrue);
+    expect(view().look.selection, lightProfile.grid.selection);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     await tester.pump();
-    // xterm draws the cursor hollow when the grid has no focus.
-    expect(view().focusNode!.hasFocus, isFalse);
-    expect(view().theme.selection, lightProfile.inactiveSelection);
+    // The painter draws the cursor as an outline and the selection grey.
+    expect(window.decor.active, isFalse);
+    expect(view().look.selection, lightProfile.inactiveSelection);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    expect(view().focusNode!.hasFocus, isTrue);
-    expect(view().theme.selection, const Color(0xFFB3D7FF));
+    expect(view().focusNode.hasFocus, isTrue);
+    expect(window.decor.active, isTrue);
+    expect(view().look.selection, const Color(0xFFB3D7FF));
   });
 
   testWidgets('the find bar grows the window by 32 pt and back', (
@@ -142,7 +150,7 @@ void main() {
       },
     );
     final (pty, _) = await pump(tester);
-    pty.output(1, 'one fish\r\ntwo fish');
+    pty.show(1, ['one fish', 'two fish']);
     await tester.pump();
     await keys(tester, LogicalKeyboardKey.keyF, meta: true);
     expect(
@@ -255,8 +263,7 @@ void main() {
           child: AmalfiTheme(
             app: 'Terminal',
             child: TerminalWindow(
-              pty: pty,
-              shellName: 'bash',
+              app: TerminalApp(pty: pty, shellName: 'bash'),
               onLastTabClosed: () => closed = true,
             ),
           ),
@@ -362,7 +369,7 @@ void main() {
 
   testWidgets('find: ⌘F, matches counted, Esc closes', (tester) async {
     final (pty, _) = await pump(tester);
-    pty.output(1, 'one fish\r\ntwo FISH\r\nred');
+    pty.show(1, ['one fish', 'two FISH', 'red']);
     await tester.pump();
     await keys(tester, LogicalKeyboardKey.keyF, meta: true);
     expect(find.byKey(const ValueKey('find bar')), findsOneWidget);
@@ -380,7 +387,8 @@ void main() {
 
   testWidgets('a mouse selection is copied with ⌘C', (tester) async {
     final (pty, _) = await pump(tester);
-    pty.output(1, 'copy me please');
+    pty.show(1, ['copy me please']);
+    pty.selections[1] = 'copy me please';
     await tester.pump();
     String? copied;
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -393,8 +401,23 @@ void main() {
       },
     );
     await keys(tester, LogicalKeyboardKey.keyA, meta: true);
+    expect(
+      pty.calls.where((c) => c.$1 == 'select').last.$3,
+      containsPair('op', 'all'),
+    );
+    pty.show(
+      1,
+      ['copy me please'],
+      extra: {
+        'selection': [
+          [0, 0, 13],
+        ],
+      },
+    );
+    await tester.pump();
     await keys(tester, LogicalKeyboardKey.keyC, meta: true);
-    expect(copied, contains('copy me please'));
+    await tester.pump();
+    expect(copied, 'copy me please');
   });
 
   testWidgets('in Italian: tabs and the missing service speak Italian', (
@@ -406,11 +429,7 @@ void main() {
       locale: const Locale('it'),
       pty: pty,
     );
-    final text = [
-      for (var y = 0; y < window.session.terminal.buffer.height; y++)
-        window.session.terminal.buffer.lines[y].getText(),
-    ].join();
-    expect(text, contains('scrivania di Silica'));
+    expect(window.session.grid.text, contains('scrivania di Silica'));
     expect(l10n.newTab, 'Nuovo pannello');
     expect(l10n.findDone, 'Fine');
     expect(l10n.findPrevious, 'Risultato precedente');
@@ -481,7 +500,9 @@ void main() {
           textDirection: TextDirection.ltr,
           child: AmalfiTheme(
             app: 'Terminal',
-            child: TerminalWindow(pty: FakePty(), shellName: 'bash'),
+            child: TerminalWindow(
+              app: TerminalApp(pty: FakePty(), shellName: 'bash'),
+            ),
           ),
         ),
       ),
@@ -496,6 +517,7 @@ void main() {
     expect(r('new tab'), const Rect.fromLTWH(604, 36, 28, 28));
     final view = tester.widget<TerminalView>(find.byType(TerminalView));
     expect(view.padding, const EdgeInsets.all(12));
+    expect(view.look.fontSize, 12);
     expect(tester.getTopLeft(find.byType(TerminalView)), const Offset(0, 68));
     // Find bar (`Apps/Terminal/Find`): 68..100, field 480 × 24 at x 8, segments 56 × 24 at 504.
     await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
