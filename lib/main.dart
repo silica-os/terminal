@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
 import 'src/app.dart';
+import 'src/app_info.dart';
 import 'src/l10n.dart';
 import 'src/pty.dart';
 import 'src/settings.dart';
@@ -23,6 +24,8 @@ Future<void> main(List<String> args) async {
   final shell = env['SHELL'];
   final shellName = command?.first.split('/').last ?? shell?.split('/').last;
   WidgetsFlutterBinding.ensureInitialized();
+  // About Terminal and the standard app menu (silica-ui#99).
+  SilicaApp.info = appInfo;
   final settings = TerminalSettings(store: FileSettingsStore());
   await settings.load();
   // The title band is part of the window: Ossido draws only the window buttons in it.
