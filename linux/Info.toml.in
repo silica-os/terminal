@@ -1,0 +1,28 @@
+# Terminal as a Silica app bundle (silica-os docs/app-bundles.md): silica-packages and
+# `cargo xtask os deploy` fill the placeholders and sign it. A system app: from /usr/Applications
+# it runs without a sandbox; [permissions] is what a copy elsewhere is given.
+# The Terminal runs the user's shell: it needs the whole computer (home, devices for the
+# pseudo-terminal, network for the programs it starts).
+format = 1
+id = "dev.frascella.Terminal"
+name = "Terminal"
+"name.it" = "Terminale"
+generic_name = "Terminal"
+comment = "Command line and shell"
+version = "@VERSION@"
+build = @BUILD@
+minimum_silica = "0.2.0"
+kind = "flutter"
+runtime = "dev.silica.Platform//1"
+args = ["--size", "640x420", "--title", "Terminal", "--multi-window"]
+categories = ["System", "TerminalEmulator"]
+keywords = ["shell", "prompt", "command", "commandline", "comando", "riga di comando"]
+
+[permissions]
+network = true
+devices = "all"
+filesystem = ["home"]
+
+[developer]
+name = "Silica"
+key = "@DEVELOPER_KEY@"
